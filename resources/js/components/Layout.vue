@@ -5,7 +5,7 @@
         <!-- Sidebar -->
         <aside
             class="fixed inset-y-0 left-0 z-40 flex flex-col border-r border-slate-200 bg-white shadow-sm transition-all duration-300 ease-in-out"
-            :class="[sidebarOpen ? 'w-64' : 'w-0 lg:w-[72px]']"
+            :class="sidebarOpen ? 'w-64' : 'w-0 lg:w-[72px]'"
         >
             <!-- Logo Area -->
             <div
@@ -252,6 +252,26 @@
             <header
                 class="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 shadow-sm transition-all duration-300 sm:px-6"
             >
+                <!-- Mobile Toggle -->
+                <button
+                    @click="sidebarOpen = !sidebarOpen"
+                    class="mr-3 rounded bg-slate-50 p-2 text-slate-500 hover:text-emerald-700 lg:hidden"
+                >
+                    <svg
+                        class="h-5 w-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16"
+                        />
+                    </svg>
+                </button>
+
                 <div class="flex flex-1 items-center gap-2 overflow-hidden">
                     <svg
                         class="hidden h-4 w-4 shrink-0 text-emerald-600 sm:block"
@@ -301,7 +321,7 @@
             </header>
 
             <!-- Main body -->
-            <main class="flex-1 p-4 sm:p-6 md:p-8">
+            <main class="flex-1 overflow-x-auto p-4 sm:p-6 md:p-8">
                 <slot />
             </main>
         </div>
@@ -335,6 +355,32 @@ const userInitials = computed(() => {
 const isActive = (path) =>
     typeof window !== 'undefined' && window.location.pathname === path;
 
+const isGroupActive = (groupName) => {
+    const path = typeof window !== 'undefined' ? window.location.pathname : '';
+    if (groupName === 'produccion') {
+        return [
+            '/produccion/peru',
+            '/produccion/chile',
+            '/produccion/colombia',
+            '/produccion/australia',
+            '/produccion/hora',
+            '/produccion/controlar',
+        ].includes(path);
+    }
+    if (groupName === 'consultas') {
+        return ['/consultas/datos', '/consultas/maquinas'].includes(path);
+    }
+    if (groupName === 'reportes') {
+        return [
+            '/reportes/diario',
+            '/reportes/historico',
+            '/reportes/centros',
+            '/reportes/comparativo',
+        ].includes(path);
+    }
+    return false;
+};
+
 const originBreadcrumb = computed(() => {
     const path = typeof window !== 'undefined' ? window.location.pathname : '';
     if (path === '/dashboard') return 'Dashboard Principal';
@@ -342,7 +388,15 @@ const originBreadcrumb = computed(() => {
     if (path === '/produccion/chile') return 'Producción > Chile';
     if (path === '/produccion/colombia') return 'Producción > Colombia';
     if (path === '/produccion/australia') return 'Producción > Australia';
-    return 'ERP Tareo';
+    if (path === '/produccion/hora') return 'Producción > Por Hora';
+    if (path === '/produccion/controlar') return 'Producción > Controlar';
+    if (path === '/consultas/datos') return 'Consultas > Datos';
+    if (path === '/consultas/maquinas') return 'Consultas > Máquinas';
+    if (path === '/reportes/diario') return 'Reportes > Diario';
+    if (path === '/reportes/historico') return 'Reportes > Histórico';
+    if (path === '/reportes/centros') return 'Reportes > Centros';
+    if (path === '/reportes/comparativo') return 'Reportes > Comparativo';
+    return 'Dashboard';
 });
 
 const updateClock = () => {
@@ -356,8 +410,9 @@ const updateClock = () => {
 onMounted(() => {
     updateClock();
     timer = setInterval(updateClock, 1000);
-    if (typeof window !== 'undefined' && window.innerWidth < 1024)
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
         sidebarOpen.value = false;
+    }
 });
 
 onUnmounted(() => {
