@@ -1,0 +1,139 @@
+<template>
+  <div class="min-h-screen flex bg-slate-100 font-sans text-slate-700 antialiased">
+    
+    <!-- Sidebar -->
+    <aside
+      class="fixed inset-y-0 left-0 z-40 flex flex-col transition-all duration-300 ease-in-out bg-white border-r border-slate-200 shadow-sm"
+      :class="[sidebarOpen ? 'w-64' : 'w-0 lg:w-[72px]']"
+    >
+      <!-- Logo Area -->
+      <div class="flex items-center justify-between h-16 px-4 border-b border-slate-100 bg-white shadow-sm relative z-10">
+        <div class="flex flex-1 items-center gap-3 overflow-hidden cursor-pointer" @click="sidebarOpen = true" :class="{ 'justify-center': !sidebarOpen }">
+          <div class="w-8 h-8 rounded shrink-0 flex items-center justify-center font-bold text-white shadow-sm bg-emerald-700">P</div>
+          <div v-show="sidebarOpen" class="truncate">
+            <h1 class="text-slate-800 font-bold text-[15px] truncate tracking-tight">Planet ERP</h1>
+            <p class="text-[9px] text-emerald-600 font-bold uppercase truncate tracking-[0.2em]">Tareo Latam</p>
+          </div>
+        </div>
+        <button @click.stop="sidebarOpen = !sidebarOpen" class="flex w-7 h-7 rounded-md bg-slate-50 items-center justify-center text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 transition-colors shrink-0 shadow-sm border border-slate-200" :class="{ 'absolute right-[-14px] top-4.5 z-50 bg-white shadow-md': !sidebarOpen }">
+          <svg v-if="sidebarOpen" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" /></svg>
+          <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" /></svg>
+        </button>
+      </div>
+
+      <!-- Navigation -->
+      <nav class="flex-1 overflow-y-auto py-5 px-3 space-y-1.5 scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
+        <NavItem href="/dashboard" icon="home" :collapsed="!sidebarOpen" :active="isActive('/dashboard')">Dashboard</NavItem>
+
+        <div v-if="sidebarOpen" class="pt-5 pb-2 pl-3 border-t border-slate-100 mt-2">
+          <p class="text-[9px] font-bold text-slate-400 uppercase tracking-[0.2em]">Producción</p>
+        </div>
+        <div v-else class="h-px bg-slate-100 mx-1 my-4"></div>
+
+        <NavGroup icon="calculator" label="Producción" :collapsed="!sidebarOpen" :defaultOpen="true">
+          <NavSubItem href="/produccion/peru" :active="isActive('/produccion/peru')">Perú</NavSubItem>
+          <NavSubItem href="/produccion/chile" :active="isActive('/produccion/chile')">Chile</NavSubItem>
+          <NavSubItem href="/produccion/colombia" :active="isActive('/produccion/colombia')">Colombia</NavSubItem>
+          <NavSubItem href="/produccion/australia" :active="isActive('/produccion/australia')">Australia</NavSubItem>
+        </NavGroup>
+
+        <NavItem href="/logout" icon="logout" :collapsed="!sidebarOpen" :active="false" @click.prevent="logout">Cerrar Sesión</NavItem>
+      </nav>
+
+      <!-- User Profile -->
+      <div class="border-t border-slate-100 bg-slate-50/50 flex-shrink-0 transition-all duration-300">
+        <div v-if="sidebarOpen" class="p-4 flex flex-col gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 flex-shrink-0 bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center rounded-lg border border-emerald-200">{{ userInitials }}</div>
+            <div class="flex-1 min-w-0 pr-1">
+              <p class="text-[12.5px] font-bold text-slate-800 truncate leading-tight">{{ userName }}</p>
+              <p class="text-[9.5px] text-emerald-600 font-bold uppercase tracking-widest mt-0.5">{{ userRole }}</p>
+            </div>
+          </div>
+          <button @click="logout" class="w-full flex items-center justify-center gap-2 py-2 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-lg border border-slate-200 hover:border-rose-200 transition-all">Cerrar Sesión</button>
+        </div>
+        <div v-else class="p-3">
+          <div class="w-full aspect-square bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center rounded-lg border border-emerald-200 mb-2 text-xs">{{ userInitials }}</div>
+          <button @click="logout" class="w-full flex justify-center py-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors border border-transparent hover:border-rose-200" title="Cerrar Sesión">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Overlay mobile -->
+    <div v-if="sidebarOpen" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-30 lg:hidden" @click="sidebarOpen = false"></div>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col min-w-0 min-h-screen transition-all duration-300 relative" :class="sidebarOpen ? 'lg:pl-64' : 'lg:pl-[72px]'">
+      
+      <!-- Header -->
+      <header class="sticky top-0 z-20 h-16 bg-white border-b border-slate-200 shadow-sm flex items-center justify-between px-4 sm:px-6 transition-all duration-300">
+        <div class="flex items-center gap-2 overflow-hidden flex-1">
+          <svg class="w-4 h-4 text-emerald-600 hidden sm:block shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>
+          <p class="text-[12.5px] font-medium text-slate-500 truncate">Navegando: <strong class="text-slate-800 font-bold tracking-wide">{{ originBreadcrumb }}</strong></p>
+        </div>
+        <div class="flex items-center gap-4 shrink-0 pl-4 border-l border-slate-100 ml-4">
+          <div class="flex items-center gap-1.5 text-[11px] font-bold tracking-widest text-slate-600 bg-slate-50 px-2.5 py-1.5 rounded-md border border-slate-200 shadow-sm">
+            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            {{ horaActual }}
+          </div>
+        </div>
+      </header>
+
+      <!-- Main body -->
+      <main class="flex-1 p-4 sm:p-6 md:p-8">
+        <slot />
+      </main>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { usePage } from '@inertiajs/vue3';
+import NavItem from './NavItem.vue';
+import NavGroup from './NavGroup.vue';
+import NavSubItem from './NavSubItem.vue';
+
+const page = usePage();
+const sidebarOpen = ref(true);
+const horaActual = ref('');
+let timer = null;
+
+const userName = computed(() => page.props.auth?.user?.Nombres || 'Usuario');
+const userRole = computed(() => page.props.auth?.user?.rol?.nombre || 'Personal');
+const userInitials = computed(() => {
+  const name = userName.value;
+  return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+});
+
+const isActive = (path) => typeof window !== 'undefined' && window.location.pathname === path;
+
+const originBreadcrumb = computed(() => {
+  const path = typeof window !== 'undefined' ? window.location.pathname : '';
+  if (path === '/dashboard') return 'Dashboard Principal';
+  if (path === '/produccion/peru') return 'Producción > Perú';
+  if (path === '/produccion/chile') return 'Producción > Chile';
+  if (path === '/produccion/colombia') return 'Producción > Colombia';
+  if (path === '/produccion/australia') return 'Producción > Australia';
+  return 'ERP Tareo';
+});
+
+const updateClock = () => {
+  horaActual.value = new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+};
+
+onMounted(() => {
+  updateClock();
+  timer = setInterval(updateClock, 1000);
+  if (typeof window !== 'undefined' && window.innerWidth < 1024) sidebarOpen.value = false;
+});
+
+onUnmounted(() => { if (timer) clearInterval(timer); });
+
+const logout = () => {
+  fetch('/logout', { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content } })
+    .then(() => { window.location.href = '/login'; });
+};
+</script>

@@ -1,0 +1,378 @@
+<template>
+    <div
+        class="flex min-h-screen bg-slate-100 font-sans text-slate-700 antialiased"
+    >
+        <!-- Sidebar -->
+        <aside
+            class="fixed inset-y-0 left-0 z-40 flex flex-col border-r border-slate-200 bg-white shadow-sm transition-all duration-300 ease-in-out"
+            :class="[sidebarOpen ? 'w-64' : 'w-0 lg:w-[72px]']"
+        >
+            <!-- Logo Area -->
+            <div
+                class="relative z-10 flex h-16 items-center justify-between border-b border-slate-100 bg-white px-4 shadow-sm"
+            >
+                <div
+                    class="flex flex-1 cursor-pointer items-center gap-3 overflow-hidden"
+                    @click="sidebarOpen = true"
+                    :class="{ 'justify-center': !sidebarOpen }"
+                >
+                    <div
+                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-emerald-700 font-bold text-white shadow-sm"
+                    >
+                        P
+                    </div>
+                    <div v-show="sidebarOpen" class="truncate">
+                        <h1
+                            class="truncate text-[15px] font-bold tracking-tight text-slate-800"
+                        >
+                            Planet ERP
+                        </h1>
+                        <p
+                            class="truncate text-[9px] font-bold tracking-[0.2em] text-emerald-600 uppercase"
+                        >
+                            Tareo Latam
+                        </p>
+                    </div>
+                </div>
+                <button
+                    @click.stop="sidebarOpen = !sidebarOpen"
+                    class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-500 shadow-sm transition-colors hover:bg-emerald-50 hover:text-emerald-700"
+                    :class="{
+                        'absolute top-4.5 right-[-14px] z-50 bg-white shadow-md':
+                            !sidebarOpen,
+                    }"
+                >
+                    <svg
+                        v-if="sidebarOpen"
+                        class="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        stroke-width="2.5"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
+                        />
+                    </svg>
+                    <svg
+                        v-else
+                        class="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        stroke-width="2.5"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M13 5l7 7-7 7M5 5l7 7-7 7"
+                        />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 space-y-1.5 overflow-y-auto px-3 py-5">
+                <NavItem
+                    href="/dashboard"
+                    icon="home"
+                    :collapsed="!sidebarOpen"
+                    :active="isActive('/dashboard')"
+                    >Dashboard</NavItem
+                >
+
+                <div
+                    v-if="sidebarOpen"
+                    class="mt-2 border-t border-slate-100 pt-5 pb-2 pl-3"
+                >
+                    <p
+                        class="text-[9px] font-bold tracking-[0.2em] text-slate-400 uppercase"
+                    >
+                        Producción
+                    </p>
+                </div>
+                <div v-else class="mx-1 my-4 h-px bg-slate-100"></div>
+
+                <NavGroup
+                    icon="calculator"
+                    label="Producción"
+                    :collapsed="!sidebarOpen"
+                    :defaultOpen="isGroupActive('produccion')"
+                >
+                    <NavSubItem
+                        href="/produccion/peru"
+                        :active="isActive('/produccion/peru')"
+                        >Perú</NavSubItem
+                    >
+                    <NavSubItem
+                        href="/produccion/chile"
+                        :active="isActive('/produccion/chile')"
+                        >Chile</NavSubItem
+                    >
+                    <NavSubItem
+                        href="/produccion/colombia"
+                        :active="isActive('/produccion/colombia')"
+                        >Colombia</NavSubItem
+                    >
+                    <NavSubItem
+                        href="/produccion/australia"
+                        :active="isActive('/produccion/australia')"
+                        >Australia</NavSubItem
+                    >
+                    <div class="mx-3 my-1 h-px bg-slate-100"></div>
+                    <NavSubItem
+                        href="/produccion/controlar"
+                        :active="isActive('/produccion/controlar')"
+                        >Controlar Producción</NavSubItem
+                    >
+                </NavGroup>
+
+                <NavGroup
+                    icon="search"
+                    label="Consultas"
+                    :collapsed="!sidebarOpen"
+                    :defaultOpen="isGroupActive('consultas')"
+                >
+                    <NavSubItem
+                        href="/consultas/datos"
+                        :active="isActive('/consultas/datos')"
+                        >Consulta Datos</NavSubItem
+                    >
+                    <NavSubItem
+                        href="/consultas/maquinas"
+                        :active="isActive('/consultas/maquinas')"
+                        >Estado Máquinas</NavSubItem
+                    >
+                </NavGroup>
+
+                <NavGroup
+                    icon="chart"
+                    label="Reportes"
+                    :collapsed="!sidebarOpen"
+                    :defaultOpen="isGroupActive('reportes')"
+                >
+                    <NavSubItem
+                        href="/reportes/diario"
+                        :active="isActive('/reportes/diario')"
+                        >Reporte Diario</NavSubItem
+                    >
+                    <NavSubItem
+                        href="/reportes/historico"
+                        :active="isActive('/reportes/historico')"
+                        >Reporte Histórico</NavSubItem
+                    >
+                    <NavSubItem
+                        href="/reportes/centros"
+                        :active="isActive('/reportes/centros')"
+                        >Por Centros</NavSubItem
+                    >
+                    <NavSubItem
+                        href="/reportes/comparativo"
+                        :active="isActive('/reportes/comparativo')"
+                        >Cuadro Comparativo</NavSubItem
+                    >
+                </NavGroup>
+            </nav>
+
+            <!-- User Profile -->
+            <div
+                class="flex-shrink-0 border-t border-slate-100 bg-slate-50/50 transition-all duration-300"
+            >
+                <div v-if="sidebarOpen" class="flex flex-col gap-3 p-4">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg border border-emerald-200 bg-emerald-100 font-bold text-emerald-700"
+                        >
+                            {{ userInitials }}
+                        </div>
+                        <div class="min-w-0 flex-1 pr-1">
+                            <p
+                                class="truncate text-[12.5px] leading-tight font-bold text-slate-800"
+                            >
+                                {{ userName }}
+                            </p>
+                            <p
+                                class="mt-0.5 text-[9.5px] font-bold tracking-widest text-emerald-600 uppercase"
+                            >
+                                {{ userRole }}
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        @click="logout"
+                        class="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-[11px] font-bold tracking-wider text-slate-600 uppercase transition-all hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+                    >
+                        Cerrar Sesión
+                    </button>
+                </div>
+                <div v-else class="p-3">
+                    <div
+                        class="mb-2 flex aspect-square w-full items-center justify-center rounded-lg border border-emerald-200 bg-emerald-100 text-xs font-bold text-emerald-700"
+                    >
+                        {{ userInitials }}
+                    </div>
+                    <button
+                        @click="logout"
+                        class="flex w-full justify-center rounded-lg border border-transparent py-2 text-slate-400 transition-colors hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+                        title="Cerrar Sesión"
+                    >
+                        <svg
+                            class="h-5 w-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                            stroke-width="2"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                            />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Overlay mobile -->
+        <div
+            v-if="sidebarOpen"
+            class="fixed inset-0 z-30 bg-slate-900/50 backdrop-blur-sm lg:hidden"
+            @click="sidebarOpen = false"
+        ></div>
+
+        <!-- Main Content -->
+        <div
+            class="relative flex min-h-screen min-w-0 flex-1 flex-col transition-all duration-300"
+            :class="sidebarOpen ? 'lg:pl-64' : 'lg:pl-[72px]'"
+        >
+            <!-- Header -->
+            <header
+                class="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4 shadow-sm transition-all duration-300 sm:px-6"
+            >
+                <div class="flex flex-1 items-center gap-2 overflow-hidden">
+                    <svg
+                        class="hidden h-4 w-4 shrink-0 text-emerald-600 sm:block"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        stroke-width="2"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M13 5l7 7-7 7M5 5l7 7-7 7"
+                        />
+                    </svg>
+                    <p
+                        class="truncate text-[12.5px] font-medium text-slate-500"
+                    >
+                        Navegando:
+                        <strong
+                            class="font-bold tracking-wide text-slate-800"
+                            >{{ originBreadcrumb }}</strong
+                        >
+                    </p>
+                </div>
+                <div
+                    class="ml-4 flex shrink-0 items-center gap-4 border-l border-slate-100 pl-4"
+                >
+                    <div
+                        class="flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[11px] font-bold tracking-widest text-slate-600 shadow-sm"
+                    >
+                        <svg
+                            class="h-4 w-4 text-emerald-600"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2.5"
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                        </svg>
+                        {{ horaActual }}
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main body -->
+            <main class="flex-1 p-4 sm:p-6 md:p-8">
+                <slot />
+            </main>
+        </div>
+    </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { usePage } from '@inertiajs/vue3';
+import NavItem from './NavItem.vue';
+import NavGroup from './NavGroup.vue';
+import NavSubItem from './NavSubItem.vue';
+
+const page = usePage();
+const sidebarOpen = ref(true);
+const horaActual = ref('');
+let timer = null;
+
+const userName = computed(() => page.props.auth?.user?.Nombres || 'Usuario');
+const userRole = computed(() => page.props.auth?.user?.rol || 'Personal');
+const userInitials = computed(() => {
+    const name = userName.value;
+    return name
+        .split(' ')
+        .map((n) => n[0])
+        .join('')
+        .substring(0, 2)
+        .toUpperCase();
+});
+
+const isActive = (path) =>
+    typeof window !== 'undefined' && window.location.pathname === path;
+
+const originBreadcrumb = computed(() => {
+    const path = typeof window !== 'undefined' ? window.location.pathname : '';
+    if (path === '/dashboard') return 'Dashboard Principal';
+    if (path === '/produccion/peru') return 'Producción > Perú';
+    if (path === '/produccion/chile') return 'Producción > Chile';
+    if (path === '/produccion/colombia') return 'Producción > Colombia';
+    if (path === '/produccion/australia') return 'Producción > Australia';
+    return 'ERP Tareo';
+});
+
+const updateClock = () => {
+    horaActual.value = new Date().toLocaleTimeString('es-PE', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+    });
+};
+
+onMounted(() => {
+    updateClock();
+    timer = setInterval(updateClock, 1000);
+    if (typeof window !== 'undefined' && window.innerWidth < 1024)
+        sidebarOpen.value = false;
+});
+
+onUnmounted(() => {
+    if (timer) clearInterval(timer);
+});
+
+const logout = () => {
+    fetch('/logout', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
+                ?.content,
+        },
+    }).then(() => {
+        window.location.href = '/login';
+    });
+};
+</script>
