@@ -16,6 +16,9 @@ class ProduccionController extends Controller
         'peru'      => 'produccionperu',
     ];
 
+    private const HORA_INICIO = 8;
+    private const HORA_FIN    = 15;
+
     private function tablaProduccion(string $pais): string
     {
         return self::TABLA_MAP[$pais] ?? self::TABLA_MAP['peru'];
@@ -35,12 +38,55 @@ class ProduccionController extends Controller
         };
     }
 
-    private function buildHoraSelects(): array
+    private function buildHoraSelects(int $inicio = self::HORA_INICIO, int $fin = self::HORA_FIN): array
     {
         return array_map(
             fn($h) => "SUM(CASE WHEN HOUR(p.FechaProduccion) = {$h} THEN p.ProduccionFinal ELSE 0 END) as h{$h}",
-            range(8, 23)
+            range($inicio, $fin)
         );
+    }
+
+    /**
+     * Promedio real: total / cantidad de horas distintas con produccion > 0.
+     * Se calcula en PHP despues de obtener la fila para poder usar el rango real trabajado.
+     */
+    private function calcularPromedio(object $row, int $inicio, int $fin): float
+    {
+        $horasTrabajadas = 0;
+        $total           = 0;
+
+        for ($h = $inicio; $h <= $fin; $h++) {
+            $val = (float) ($row->{"h{$h}"} ?? 0);
+            if ($val > 0) {
+                $horasTrabajadas++;
+                $total += $val;
+            }
+        }
+
+        return $horasTrabajadas > 0 ? round($total / $horasTrabajadas, 2) : 0;
+    }
+
+    private function queryRangoBase(string $tabla, string $fechaInicio, string $fechaFin, int $horaInicio = self::HORA_INICIO, int $horaFin = self::HORA_FIN)
+    {
+        $query = DB::table("{$tabla} as p")
+            ->join('centros as c', 'p.idCentro', '=', 'c.IdCentro')
+            ->join('maquinas as m', 'p.idMaquina', '=', 'm.IdMaquina')
+            ->whereBetween(DB::raw('DATE(p.FechaProduccion)'), [$fechaInicio, $fechaFin])
+            ->whereRaw('HOUR(p.FechaProduccion) BETWEEN ? AND ?', [$horaInicio, $horaFin])
+            ->where('m.EsVisible', 1)
+            ->selectRaw('m.Modelo as modelo')
+            ->selectRaw('c.NombreCentro as centro')
+            ->selectRaw('m.CodigoMaquina as serie');
+
+        foreach ($this->buildHoraSelects($horaInicio, $horaFin) as $select) {
+            $query->selectRaw($select);
+        }
+
+        $query->selectRaw('SUM(p.ProduccionFinal) as total');
+
+        return $query
+            ->groupBy('m.Modelo', 'c.NombreCentro', 'm.CodigoMaquina')
+            ->orderByDesc(DB::raw('SUM(p.ProduccionFinal)'));
     }
 
     private function queryHoraBase(string $tabla, string $fecha)
@@ -49,6 +95,7 @@ class ProduccionController extends Controller
             ->join('centros as c', 'p.idCentro', '=', 'c.IdCentro')
             ->join('maquinas as m', 'p.idMaquina', '=', 'm.IdMaquina')
             ->whereDate('p.FechaProduccion', $fecha)
+            ->whereRaw('HOUR(p.FechaProduccion) BETWEEN ? AND ?', [self::HORA_INICIO, self::HORA_FIN])
             ->where('m.EsVisible', 1)
             ->selectRaw('m.Modelo as modelo')
             ->selectRaw('c.NombreCentro as centro')
@@ -66,40 +113,34 @@ class ProduccionController extends Controller
             ->orderBy('m.CodigoMaquina');
     }
 
+    private function enrichWithIndex(iterable $rows, int $horaInicio = self::HORA_INICIO, int $horaFin = self::HORA_FIN): array
+    {
+        $result = [];
+        foreach ($rows as $i => $row) {
+            $arr             = (array) $row;
+            $arr['item']     = $i + 1;
+            $arr['promedio'] = $this->calcularPromedio((object) $arr, $horaInicio, $horaFin);
+            $result[]        = (object) $arr;
+        }
+        return $result;
+    }
+
     public function peru(Request $request)
     {
         $fechaInicio = $request->get('fecha_inicio', now()->subDays(14)->toDateString());
         $fechaFin    = $request->get('fecha_fin', now()->toDateString());
 
-        $datos = DB::table('produccionperu as p')
-            ->join('centros as c', 'p.idCentro', '=', 'c.IdCentro')
-            ->join('maquinas as m', 'p.idMaquina', '=', 'm.IdMaquina')
-            ->whereBetween(DB::raw('DATE(p.FechaProduccion)'), [$fechaInicio, $fechaFin])
-            ->where('m.EsVisible', 1)
-            ->selectRaw('ROW_NUMBER() OVER (ORDER BY SUM(p.ProduccionFinal) DESC) as item')
-            ->selectRaw('m.Modelo as modelo')
-            ->selectRaw('c.NombreCentro as centro')
-            ->selectRaw('m.CodigoMaquina as serie')
-            ->selectRaw('SUM(p.ProduccionFinal) as total')
-            ->selectRaw('ROUND(AVG(p.ProduccionFinal), 2) as promedio')
-            ->selectRaw('SUM(CASE WHEN HOUR(p.FechaProduccion) = 8  THEN p.ProduccionFinal ELSE 0 END) as h8')
-            ->selectRaw('SUM(CASE WHEN HOUR(p.FechaProduccion) = 9  THEN p.ProduccionFinal ELSE 0 END) as h9')
-            ->selectRaw('SUM(CASE WHEN HOUR(p.FechaProduccion) = 10 THEN p.ProduccionFinal ELSE 0 END) as h10')
-            ->selectRaw('SUM(CASE WHEN HOUR(p.FechaProduccion) = 11 THEN p.ProduccionFinal ELSE 0 END) as h11')
-            ->selectRaw('SUM(CASE WHEN HOUR(p.FechaProduccion) = 12 THEN p.ProduccionFinal ELSE 0 END) as h12')
-            ->selectRaw('SUM(CASE WHEN HOUR(p.FechaProduccion) = 13 THEN p.ProduccionFinal ELSE 0 END) as h13')
-            ->selectRaw('SUM(CASE WHEN HOUR(p.FechaProduccion) = 14 THEN p.ProduccionFinal ELSE 0 END) as h14')
-            ->selectRaw('SUM(CASE WHEN HOUR(p.FechaProduccion) = 15 THEN p.ProduccionFinal ELSE 0 END) as h15')
-            ->groupBy('m.Modelo', 'c.NombreCentro', 'm.CodigoMaquina')
-            ->orderByDesc('total')
-            ->get();
+        $rawRows = $this->queryRangoBase('produccionperu', $fechaInicio, $fechaFin)->get();
+        $datos   = $this->enrichWithIndex($rawRows);
 
         $centros = $this->centrosQuery('peru')->orderBy('NombreCentro')->get();
 
         return inertia('ProduccionPeru', [
-            'datos'   => $datos,
-            'centros' => $centros,
-            'filtros' => ['fecha_inicio' => $fechaInicio, 'fecha_fin' => $fechaFin],
+            'datos'       => $datos,
+            'centros'     => $centros,
+            'filtros'     => ['fecha_inicio' => $fechaInicio, 'fecha_fin' => $fechaFin],
+            'horaInicio'  => self::HORA_INICIO,
+            'horaFin'     => self::HORA_FIN,
         ]);
     }
 
@@ -108,20 +149,8 @@ class ProduccionController extends Controller
         $fechaInicio = $request->get('fecha_inicio', now()->subDays(14)->toDateString());
         $fechaFin    = $request->get('fecha_fin', now()->toDateString());
 
-        $datos = DB::table('produccionchile as p')
-            ->join('centros as c', 'p.idCentro', '=', 'c.IdCentro')
-            ->join('maquinas as m', 'p.idMaquina', '=', 'm.IdMaquina')
-            ->whereBetween(DB::raw('DATE(p.FechaProduccion)'), [$fechaInicio, $fechaFin])
-            ->where('m.EsVisible', 1)
-            ->selectRaw('ROW_NUMBER() OVER (ORDER BY SUM(p.ProduccionFinal) DESC) as item')
-            ->selectRaw('m.Modelo as modelo')
-            ->selectRaw('c.NombreCentro as centro')
-            ->selectRaw('m.CodigoMaquina as serie')
-            ->selectRaw('SUM(p.ProduccionFinal) as total')
-            ->selectRaw('ROUND(AVG(p.ProduccionFinal), 2) as promedio')
-            ->groupBy('m.Modelo', 'c.NombreCentro', 'm.CodigoMaquina')
-            ->orderByDesc('total')
-            ->get();
+        $rawRows = $this->queryRangoBase('produccionchile', $fechaInicio, $fechaFin)->get();
+        $datos   = $this->enrichWithIndex($rawRows);
 
         $centros = $this->centrosQuery('chile')
             ->where('IdCentro', '!=', 46)
@@ -129,9 +158,11 @@ class ProduccionController extends Controller
             ->get();
 
         return inertia('ProduccionChile', [
-            'datos'   => $datos,
-            'centros' => $centros,
-            'filtros' => ['fecha_inicio' => $fechaInicio, 'fecha_fin' => $fechaFin],
+            'datos'      => $datos,
+            'centros'    => $centros,
+            'filtros'    => ['fecha_inicio' => $fechaInicio, 'fecha_fin' => $fechaFin],
+            'horaInicio' => self::HORA_INICIO,
+            'horaFin'    => self::HORA_FIN,
         ]);
     }
 
@@ -140,27 +171,17 @@ class ProduccionController extends Controller
         $fechaInicio = $request->get('fecha_inicio', now()->subDays(14)->toDateString());
         $fechaFin    = $request->get('fecha_fin', now()->toDateString());
 
-        $datos = DB::table('produccioncolombia as p')
-            ->join('centros as c', 'p.idCentro', '=', 'c.IdCentro')
-            ->join('maquinas as m', 'p.idMaquina', '=', 'm.IdMaquina')
-            ->whereBetween(DB::raw('DATE(p.FechaProduccion)'), [$fechaInicio, $fechaFin])
-            ->where('m.EsVisible', 1)
-            ->selectRaw('ROW_NUMBER() OVER (ORDER BY SUM(p.ProduccionFinal) DESC) as item')
-            ->selectRaw('m.Modelo as modelo')
-            ->selectRaw('c.NombreCentro as centro')
-            ->selectRaw('m.CodigoMaquina as serie')
-            ->selectRaw('SUM(p.ProduccionFinal) as total')
-            ->selectRaw('ROUND(AVG(p.ProduccionFinal), 2) as promedio')
-            ->groupBy('m.Modelo', 'c.NombreCentro', 'm.CodigoMaquina')
-            ->orderByDesc('total')
-            ->get();
+        $rawRows = $this->queryRangoBase('produccioncolombia', $fechaInicio, $fechaFin)->get();
+        $datos   = $this->enrichWithIndex($rawRows);
 
         $centros = $this->centrosQuery('colombia')->orderBy('NombreCentro')->get();
 
         return inertia('ProduccionColombia', [
-            'datos'   => $datos,
-            'centros' => $centros,
-            'filtros' => ['fecha_inicio' => $fechaInicio, 'fecha_fin' => $fechaFin],
+            'datos'      => $datos,
+            'centros'    => $centros,
+            'filtros'    => ['fecha_inicio' => $fechaInicio, 'fecha_fin' => $fechaFin],
+            'horaInicio' => self::HORA_INICIO,
+            'horaFin'    => self::HORA_FIN,
         ]);
     }
 
@@ -169,27 +190,17 @@ class ProduccionController extends Controller
         $fechaInicio = $request->get('fecha_inicio', now()->subDays(14)->toDateString());
         $fechaFin    = $request->get('fecha_fin', now()->toDateString());
 
-        $datos = DB::table('produccionaustralia as p')
-            ->join('centros as c', 'p.idCentro', '=', 'c.IdCentro')
-            ->join('maquinas as m', 'p.idMaquina', '=', 'm.IdMaquina')
-            ->whereBetween(DB::raw('DATE(p.FechaProduccion)'), [$fechaInicio, $fechaFin])
-            ->where('m.EsVisible', 1)
-            ->selectRaw('ROW_NUMBER() OVER (ORDER BY SUM(p.ProduccionFinal) DESC) as item')
-            ->selectRaw('m.Modelo as modelo')
-            ->selectRaw('c.NombreCentro as centro')
-            ->selectRaw('m.CodigoMaquina as serie')
-            ->selectRaw('SUM(p.ProduccionFinal) as total')
-            ->selectRaw('ROUND(AVG(p.ProduccionFinal), 2) as promedio')
-            ->groupBy('m.Modelo', 'c.NombreCentro', 'm.CodigoMaquina')
-            ->orderByDesc('total')
-            ->get();
+        $rawRows = $this->queryRangoBase('produccionaustralia', $fechaInicio, $fechaFin)->get();
+        $datos   = $this->enrichWithIndex($rawRows);
 
         $centros = $this->centrosQuery('australia')->orderBy('NombreCentro')->get();
 
         return inertia('ProduccionAustralia', [
-            'datos'   => $datos,
-            'centros' => $centros,
-            'filtros' => ['fecha_inicio' => $fechaInicio, 'fecha_fin' => $fechaFin],
+            'datos'      => $datos,
+            'centros'    => $centros,
+            'filtros'    => ['fecha_inicio' => $fechaInicio, 'fecha_fin' => $fechaFin],
+            'horaInicio' => self::HORA_INICIO,
+            'horaFin'    => self::HORA_FIN,
         ]);
     }
 
@@ -199,14 +210,14 @@ class ProduccionController extends Controller
         $pais  = $request->get('pais', 'peru');
         $tabla = $this->tablaProduccion($pais);
 
-        $datos = $this->queryHoraBase($tabla, $fecha)
-            ->get()
-            ->values()
-            ->map(fn($item, $i) => (object) array_merge(['item' => $i + 1], (array) $item));
+        $rawRows = $this->queryHoraBase($tabla, $fecha)->get();
+        $datos   = $this->enrichWithIndex($rawRows);
 
         return inertia('ProduccionHora', [
-            'datos'   => $datos,
-            'filtros' => ['fecha' => $fecha, 'pais' => $pais],
+            'datos'      => $datos,
+            'filtros'    => ['fecha' => $fecha, 'pais' => $pais],
+            'horaInicio' => self::HORA_INICIO,
+            'horaFin'    => self::HORA_FIN,
         ]);
     }
 
@@ -216,23 +227,36 @@ class ProduccionController extends Controller
         $pais  = $request->get('pais', 'peru');
         $tabla = $this->tablaProduccion($pais);
 
-        $query = DB::table("{$tabla} as p")
+        $baseQuery = DB::table("{$tabla} as p")
             ->join('centros as c', 'p.idCentro', '=', 'c.IdCentro')
             ->join('maquinas as m', 'p.idMaquina', '=', 'm.IdMaquina')
             ->whereDate('p.FechaProduccion', $fecha)
+            ->whereRaw('HOUR(p.FechaProduccion) BETWEEN ? AND ?', [self::HORA_INICIO, self::HORA_FIN])
             ->where('m.EsVisible', 1);
 
-        $datos = (clone $query)
+        $rawRows = (clone $baseQuery)
             ->selectRaw('c.NombreCentro')
             ->selectRaw('m.Modelo')
             ->selectRaw('m.CodigoMaquina')
             ->selectRaw('SUM(p.ProduccionFinal) as total')
             ->selectRaw('COUNT(p.idProduccion) as conteo')
+            ->selectRaw('MIN(HOUR(p.FechaProduccion)) as hora_inicio_real')
+            ->selectRaw('MAX(HOUR(p.FechaProduccion)) as hora_fin_real')
             ->groupBy('c.NombreCentro', 'm.Modelo', 'm.CodigoMaquina')
             ->orderByDesc('total')
             ->get();
 
-        $totales = (clone $query)
+        $datos = $rawRows->map(function ($row, $i) {
+            $arr             = (array) $row;
+            $arr['item']     = $i + 1;
+            $horasTrabajadas = ($row->hora_fin_real - $row->hora_inicio_real) + 1;
+            $arr['promedio'] = $horasTrabajadas > 0
+                ? round($row->total / $horasTrabajadas, 2)
+                : 0;
+            return (object) $arr;
+        });
+
+        $totales = (clone $baseQuery)
             ->selectRaw('SUM(p.ProduccionFinal) as total_general')
             ->selectRaw('COUNT(p.idProduccion) as conteo_general')
             ->first();
@@ -240,48 +264,69 @@ class ProduccionController extends Controller
         $centros = $this->centrosQuery($pais)->orderBy('NombreCentro')->get();
 
         return inertia('ProduccionControlar', [
-            'datos'   => $datos,
-            'centros' => $centros,
-            'totales' => $totales,
-            'filtros' => ['fecha' => $fecha, 'pais' => $pais],
+            'datos'      => $datos,
+            'centros'    => $centros,
+            'totales'    => $totales,
+            'filtros'    => ['fecha' => $fecha, 'pais' => $pais],
+            'horaInicio' => self::HORA_INICIO,
+            'horaFin'    => self::HORA_FIN,
         ]);
     }
 
     public function exportarCuadre(Request $request): StreamedResponse
     {
         $fecha  = $request->get('fecha', now()->toDateString());
-        $paises = ['peru', 'chile', 'colombia', 'australia'];
+        $pais   = $request->get('pais', 'todos');
+        $paises = $pais === 'todos' ? array_keys(self::TABLA_MAP) : [$pais];
 
         $unionQuery = null;
 
-        foreach ($paises as $pais) {
-            $sub = $this->queryHoraBase($this->tablaProduccion($pais), $fecha)
-                        ->addSelect(DB::raw("'{$pais}' as pais"));
+        foreach ($paises as $p) {
+            $sub = $this->queryHoraBase($this->tablaProduccion($p), $fecha)
+                        ->addSelect(DB::raw("'{$p}' as pais"));
 
             $unionQuery = $unionQuery ? $unionQuery->unionAll($sub) : $sub;
         }
 
         $rows = DB::query()->fromSub($unionQuery, 'u')->get()->values();
 
-        return response()->streamDownload(function () use ($rows) {
+        $horaInicio = self::HORA_INICIO;
+        $horaFin    = self::HORA_FIN;
+
+        return response()->streamDownload(function () use ($rows, $horaInicio, $horaFin) {
             $handle = fopen('php://output', 'w');
 
+            $horasHeader = array_map(fn($h) => "{$h}:00", range($horaInicio, $horaFin));
+
             fputcsv($handle, array_merge(
-                ['ITEM', 'MODELO', 'CENTRO COMERCIAL', 'SERIE'],
-                array_map(fn($h) => "{$h}:00", range(8, 23)),
-                ['TOTAL']
+                ['ITEM', 'PAIS', 'MODELO', 'CENTRO COMERCIAL', 'SERIE'],
+                $horasHeader,
+                ['TOTAL', 'PROMEDIO']
             ));
 
             foreach ($rows as $i => $row) {
-                $line = [$i + 1, $row->modelo, $row->centro, $row->serie];
-                foreach (range(8, 23) as $h) {
-                    $line[] = $row->{"h{$h}"} ?? 0;
+                $line = [$i + 1, strtoupper($row->pais ?? ''), $row->modelo, $row->centro, $row->serie];
+
+                $horasTrabajadas = 0;
+                $totalFila       = 0;
+
+                for ($h = $horaInicio; $h <= $horaFin; $h++) {
+                    $val    = (float) ($row->{"h{$h}"} ?? 0);
+                    $line[] = $val;
+                    if ($val > 0) {
+                        $horasTrabajadas++;
+                        $totalFila += $val;
+                    }
                 }
-                $line[] = $row->total;
+
+                $promedio = $horasTrabajadas > 0 ? round($totalFila / $horasTrabajadas, 2) : 0;
+                $line[]   = $row->total;
+                $line[]   = $promedio;
+
                 fputcsv($handle, $line);
             }
 
             fclose($handle);
-        }, "cuadre_{$fecha}.csv", ['Content-Type' => 'text/csv']);
+        }, "cuadre_{$fecha}_{$pais}.csv", ['Content-Type' => 'text/csv']);
     }
 }
