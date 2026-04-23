@@ -94,8 +94,8 @@ class ProduccionController extends Controller
     }
 
     /**
-     * Promedio real: total / cantidad de horas distintas con produccion > 0.
-     * Se calcula en PHP despues de obtener la fila para poder usar el rango real trabajado.
+     * Se calcula en PHP después de obtener la fila.
+     * Si trabajó solo 1 hora, dividir entre 8 para normalizar.
      */
     private function calcularPromedio(object $row, int $inicio, int $fin): float
     {
@@ -110,7 +110,16 @@ class ProduccionController extends Controller
             }
         }
 
-        return $horasTrabajadas > 0 ? round($total / $horasTrabajadas, 2) : 0;
+        if ($horasTrabajadas === 0) {
+            return 0;
+        }
+
+        // Si solo trabajó 1 hora, normalizar usando 8 horas
+        if ($horasTrabajadas === 1) {
+            return round($total / 8, 2);
+        }
+
+        return round($total / $horasTrabajadas, 2);
     }
 
     private function queryRangoBase(string $tabla, string $fechaInicio, string $fechaFin, int $horaInicio = self::HORA_INICIO, int $horaFin = self::HORA_FIN)
@@ -322,8 +331,9 @@ class ProduccionController extends Controller
             $arr = (array) $row;
             $arr['item'] = $i + 1;
             $horasTrabajadas = ($row->hora_fin_real - $row->hora_inicio_real) + 1;
+            $divisor = $horasTrabajadas === 1 ? 8 : $horasTrabajadas;
             $arr['promedio'] = $horasTrabajadas > 0
-                ? round($row->total / $horasTrabajadas, 2)
+                ? round($row->total / $divisor, 2)
                 : 0;
 
             return (object) $arr;

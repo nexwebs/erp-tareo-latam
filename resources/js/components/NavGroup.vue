@@ -12,18 +12,18 @@ const isOpen = ref(props.defaultOpen ?? false);
 </script>
 
 <template>
-    <div class="space-y-1">
+    <div class="space-y-0.5">
         <button
             @click="isOpen = !isOpen"
-            class="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-800"
+            class="group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[12px] font-medium text-slate-400 hover:bg-slate-800/40 hover:text-slate-200"
         >
             <svg
                 v-if="icon === 'calculator'"
-                class="h-4 w-4 shrink-0 text-slate-400"
+                class="h-4 w-4 shrink-0 text-slate-500"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
-                stroke-width="2"
+                stroke-width="1.5"
             >
                 <path
                     stroke-linecap="round"
@@ -33,11 +33,11 @@ const isOpen = ref(props.defaultOpen ?? false);
             </svg>
             <svg
                 v-else-if="icon === 'search'"
-                class="h-4 w-4 shrink-0 text-slate-400"
+                class="h-4 w-4 shrink-0 text-slate-500"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
-                stroke-width="2"
+                stroke-width="1.5"
             >
                 <path
                     stroke-linecap="round"
@@ -47,11 +47,11 @@ const isOpen = ref(props.defaultOpen ?? false);
             </svg>
             <svg
                 v-else-if="icon === 'chart'"
-                class="h-4 w-4 shrink-0 text-slate-400"
+                class="h-4 w-4 shrink-0 text-slate-500"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
-                stroke-width="2"
+                stroke-width="1.5"
             >
                 <path
                     stroke-linecap="round"
@@ -64,7 +64,7 @@ const isOpen = ref(props.defaultOpen ?? false);
             }}</span>
             <svg
                 v-if="!collapsed"
-                class="h-3.5 w-3.5 text-slate-400 transition-transform"
+                class="h-3.5 w-3.5 text-slate-500 transition-transform"
                 :class="{ 'rotate-90': isOpen }"
                 fill="none"
                 stroke="currentColor"
@@ -80,7 +80,7 @@ const isOpen = ref(props.defaultOpen ?? false);
         </button>
         <div
             v-if="isOpen && !collapsed"
-            class="ml-4 space-y-1 border-l border-slate-200 pl-3"
+            class="ml-4 space-y-0.5 border-l border-slate-800/60 pl-3"
         >
             <slot />
         </div>

@@ -26,7 +26,7 @@ const submit = () => form.post('/login');
                 <p class="text-slate-400 text-sm mb-10">Planet Sistcontrol Latam</p>
 
                 <div class="flex flex-col gap-4">
-                    <div v-for="feat in ['Control de asistencia en tiempo real', 'Gestión de personal por proyecto', 'Reportes y exportación avanzada']"
+                    <div v-for="feat in ['Control de asistencia en tiempo real', 'Reportes y exportación avanzada']"
                         :key="feat"
                         class="flex items-center gap-3 text-slate-300 text-sm">
                         <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.7)] flex-shrink-0"></span>

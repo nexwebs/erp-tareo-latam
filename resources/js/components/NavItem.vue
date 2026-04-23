@@ -10,11 +10,11 @@ defineProps<{
 <template>
     <a
         :href="href"
-        class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-all duration-200"
+        class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[12px] font-medium transition-all duration-200"
         :class="
             active
-                ? 'bg-emerald-600 text-white shadow-sm'
-                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-800'
+                ? 'border-l-2 border-emerald-500 bg-slate-800/70 text-emerald-400'
+                : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'
         "
     >
         <svg
@@ -23,7 +23,7 @@ defineProps<{
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
-            stroke-width="2"
+            stroke-width="1.5"
         >
             <path
                 stroke-linecap="round"
@@ -37,7 +37,7 @@ defineProps<{
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
-            stroke-width="2"
+            stroke-width="1.5"
         >
             <path
                 stroke-linecap="round"
@@ -51,7 +51,7 @@ defineProps<{
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
-            stroke-width="2"
+            stroke-width="1.5"
         >
             <path
                 stroke-linecap="round"
@@ -65,7 +65,7 @@ defineProps<{
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
-            stroke-width="2"
+            stroke-width="1.5"
         >
             <path
                 stroke-linecap="round"
@@ -73,8 +73,6 @@ defineProps<{
                 d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
             />
         </svg>
-        <span v-if="!collapsed" class="truncate">
-            <slot>Label</slot>
-        </span>
+        <span v-if="!collapsed" class="truncate"><slot>Label</slot></span>
     </a>
 </template>

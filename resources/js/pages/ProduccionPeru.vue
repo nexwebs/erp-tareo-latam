@@ -31,7 +31,36 @@ function filtrar() {
 }
 
 function exportar() {
-    window.location.href = `/produccion/excel?fecha=${fechaFin.value}&pais=peru`;
+    const n = (v: any) => (parseFloat(v) || 0).toFixed(2);
+    const horasArr = horas.value;
+
+    const th = (t: string) =>
+        `<th style="background:#1e3a5f;color:#34d399;padding:6px 10px;border:1px solid #334155;white-space:nowrap">${t}</th>`;
+    const td = (t: any, extra = '') =>
+        `<td style="padding:5px 10px;border:1px solid #1e293b;${extra}">${t}</td>`;
+
+    const encabezado = `<tr>${th('#')}${th('Modelo')}${th('Centro')}${th('Serie')}${horasArr.map((h) => th(`${h}h`)).join('')}${th('Total')}${th('Prom/h')}</tr>`;
+
+    const filas = datosFiltrados.value
+        .map(
+            (r) =>
+                `<tr>${td(r.item)}${td(r.modelo)}${td(r.centro)}${td(r.serie, 'font-family:monospace;color:#22d3ee')}${horasArr.map((h) => td(n(r[`h${h}`]), 'text-align:right')).join('')}${td(n(r.total), 'text-align:right;font-weight:bold;color:#34d399')}${td(n(r.promedio), 'text-align:right;font-weight:bold')}</tr>`,
+        )
+        .join('');
+
+    const totales = `<tr style="background:#1e293b;font-weight:bold">${td('')}${td('')}${td('')}${td('TOTAL', 'font-weight:bold')}${horasArr.map((h) => td(n(totalesHora.value[h]), 'text-align:right;color:#34d399')).join('')}${td(n(totalGeneral.value), 'text-align:right;color:#34d399;font-size:1.05em')}${td(n(promedioGeneral.value), 'text-align:right;color:#fbbf24;font-size:1.05em')}</tr>`;
+
+    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><style>body{font-family:Arial,sans-serif;font-size:11px;background:#0f172a;color:#e2e8f0}table{border-collapse:collapse;width:100%}</style></head><body><h3 style="color:#34d399;margin-bottom:8px">Producción Perú · ${fechaInicio.value} → ${fechaFin.value}</h3><table>${encabezado}${filas}${totales}</table></body></html>`;
+
+    const blob = new Blob([html], {
+        type: 'application/vnd.ms-excel;charset=utf-8',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `produccion_peru_${fechaInicio.value}_${fechaFin.value}.xls`;
+    a.click();
+    URL.revokeObjectURL(url);
 }
 
 const fmt = (v: any) => {
@@ -98,6 +127,24 @@ function intensidad(valor: number, maxHora: number): string {
     if (pct >= 0.5) return 'text-emerald-400';
     if (pct >= 0.2) return 'text-emerald-600';
     return 'text-slate-600';
+}
+
+const statsPromedio = computed(() => {
+    const values = props.datos
+        .map((r) => parseFloat(r.promedio) || 0)
+        .filter((v) => v > 0);
+    if (!values.length) return { media: 0 };
+    const media = values.reduce((a, b) => a + b, 0) / values.length;
+    return { media };
+});
+
+function colorPromedio(promedio: number): string {
+    const v = promedio || 0;
+    const { media } = statsPromedio.value;
+    if (!media) return 'text-slate-400';
+    if (v >= media) return 'text-emerald-400';
+    if (v >= media * 0.7) return 'text-yellow-400';
+    return 'text-rose-400';
 }
 
 const COL_W = { num: 40, modelo: 130, centro: 160, serie: 110 } as const;
@@ -381,7 +428,8 @@ const stickyLeft = {
                                     {{ fmt(row.total) }}
                                 </td>
                                 <td
-                                    class="min-w-[80px] bg-amber-950/20 px-3 py-2 text-right text-xs font-bold text-amber-400 tabular-nums"
+                                    class="min-w-[80px] bg-amber-950/20 px-3 py-2 text-right text-xs font-bold tabular-nums"
+                                    :class="colorPromedio(row.promedio)"
                                 >
                                     {{ fmt(row.promedio) }}
                                 </td>
