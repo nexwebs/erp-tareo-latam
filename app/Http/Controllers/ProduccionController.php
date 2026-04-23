@@ -23,7 +23,48 @@ class ProduccionController extends Controller
 
     private const HORA_INICIO = 8;
 
-    private const HORA_FIN = 15;
+    private const HORA_FIN = 23;
+
+    private const PAR_PAIS = [
+        'chile' => 'CLP-PEN',
+        'colombia' => 'COP-PEN',
+        'australia' => 'AUD-PEN',
+    ];
+
+    private const TC_REFERENCIA = [
+        'chile' => 0.0039,
+        'colombia' => 0.0010,
+        'australia' => 2.47,
+    ];
+
+    private function obtenerTipoCambio(string $pais): float
+    {
+        $par = self::PAR_PAIS[$pais] ?? null;
+        if (! $par) {
+            return self::TC_REFERENCIA[$pais] ?? 1;
+        }
+
+        try {
+            $url = "https://dolar.pe/api/public/series?pairs={$par}";
+            $response = file_get_contents($url);
+            $data = json_decode($response, true);
+
+            if (isset($data['series'][0]['data'])) {
+                $items = $data['series'][0]['data'];
+                if (! empty($items)) {
+                    $ultimo = end($items);
+                    $valor = (float) ($ultimo['value'] ?? 0);
+                    if ($valor > 0) {
+                        return $valor;
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            \Log::error("Error tipo cambio {$pais}: ".$e->getMessage());
+        }
+
+        return self::TC_REFERENCIA[$pais] ?? 1;
+    }
 
     private function tablaProduccion(string $pais): string
     {
@@ -136,6 +177,11 @@ class ProduccionController extends Controller
     {
         $fechaInicio = $request->get('fecha_inicio', now()->subDays(14)->toDateString());
         $fechaFin = $request->get('fecha_fin', now()->toDateString());
+        $tipoCambio = $request->get('tipo_cambio');
+
+        $tipoCambioReal = $tipoCambio
+            ? (float) str_replace(',', '.', $tipoCambio)
+            : $this->obtenerTipoCambio('peru');
 
         $rawRows = $this->queryRangoBase('produccionperu', $fechaInicio, $fechaFin)->get();
         $datos = $this->enrichWithIndex($rawRows);
@@ -148,6 +194,7 @@ class ProduccionController extends Controller
             'filtros' => ['fecha_inicio' => $fechaInicio, 'fecha_fin' => $fechaFin],
             'horaInicio' => self::HORA_INICIO,
             'horaFin' => self::HORA_FIN,
+            'tipoCambio' => $tipoCambioReal,
         ]);
     }
 
@@ -155,6 +202,11 @@ class ProduccionController extends Controller
     {
         $fechaInicio = $request->get('fecha_inicio', now()->subDays(14)->toDateString());
         $fechaFin = $request->get('fecha_fin', now()->toDateString());
+        $tipoCambio = $request->get('tipo_cambio');
+
+        $tipoCambioReal = $tipoCambio
+            ? (float) str_replace(',', '.', $tipoCambio)
+            : $this->obtenerTipoCambio('chile');
 
         $rawRows = $this->queryRangoBase('produccionchile', $fechaInicio, $fechaFin)->get();
         $datos = $this->enrichWithIndex($rawRows);
@@ -170,6 +222,7 @@ class ProduccionController extends Controller
             'filtros' => ['fecha_inicio' => $fechaInicio, 'fecha_fin' => $fechaFin],
             'horaInicio' => self::HORA_INICIO,
             'horaFin' => self::HORA_FIN,
+            'tipoCambio' => $tipoCambioReal,
         ]);
     }
 
@@ -177,6 +230,11 @@ class ProduccionController extends Controller
     {
         $fechaInicio = $request->get('fecha_inicio', now()->subDays(14)->toDateString());
         $fechaFin = $request->get('fecha_fin', now()->toDateString());
+        $tipoCambio = $request->get('tipo_cambio');
+
+        $tipoCambioReal = $tipoCambio
+            ? (float) str_replace(',', '.', $tipoCambio)
+            : $this->obtenerTipoCambio('colombia');
 
         $rawRows = $this->queryRangoBase('produccioncolombia', $fechaInicio, $fechaFin)->get();
         $datos = $this->enrichWithIndex($rawRows);
@@ -189,6 +247,7 @@ class ProduccionController extends Controller
             'filtros' => ['fecha_inicio' => $fechaInicio, 'fecha_fin' => $fechaFin],
             'horaInicio' => self::HORA_INICIO,
             'horaFin' => self::HORA_FIN,
+            'tipoCambio' => $tipoCambioReal,
         ]);
     }
 
@@ -196,6 +255,11 @@ class ProduccionController extends Controller
     {
         $fechaInicio = $request->get('fecha_inicio', now()->subDays(14)->toDateString());
         $fechaFin = $request->get('fecha_fin', now()->toDateString());
+        $tipoCambio = $request->get('tipo_cambio');
+
+        $tipoCambioReal = $tipoCambio
+            ? (float) str_replace(',', '.', $tipoCambio)
+            : $this->obtenerTipoCambio('australia');
 
         $rawRows = $this->queryRangoBase('produccionaustralia', $fechaInicio, $fechaFin)->get();
         $datos = $this->enrichWithIndex($rawRows);
@@ -208,6 +272,7 @@ class ProduccionController extends Controller
             'filtros' => ['fecha_inicio' => $fechaInicio, 'fecha_fin' => $fechaFin],
             'horaInicio' => self::HORA_INICIO,
             'horaFin' => self::HORA_FIN,
+            'tipoCambio' => $tipoCambioReal,
         ]);
     }
 

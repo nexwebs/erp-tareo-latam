@@ -9,11 +9,35 @@ const props = defineProps<{
     filtros: { fecha_inicio: string; fecha_fin: string };
     horaInicio: number;
     horaFin: number;
+    tipoCambio: number | null;
 }>();
 
 const fechaInicio = ref(props.filtros.fecha_inicio);
 const fechaFin = ref(props.filtros.fecha_fin);
 const busqueda = ref('');
+const tipoCambioManual = ref<number | null>(props.tipoCambio);
+
+const tipoCambioApi = computed(() => props.tipoCambio);
+const tipoCambioActivo = computed(
+    () => tipoCambioManual.value ?? props.tipoCambio,
+);
+const tipoCambioOrigen = computed(() =>
+    tipoCambioManual.value ? 'manual' : 'api',
+);
+
+const actualizarTipoCambio = () => {
+    if (tipoCambioManual.value && tipoCambioManual.value > 0) {
+        router.get(
+            '/produccion/colombia',
+            {
+                fecha_inicio: fechaInicio.value,
+                fecha_fin: fechaFin.value,
+                tipo_cambio: tipoCambioManual.value,
+            },
+            { preserveScroll: true },
+        );
+    }
+};
 
 const horas = computed(() => {
     const arr: number[] = [];
@@ -24,7 +48,13 @@ const horas = computed(() => {
 function filtrar() {
     router.get(
         '/produccion/colombia',
-        { fecha_inicio: fechaInicio.value, fecha_fin: fechaFin.value },
+        {
+            fecha_inicio: fechaInicio.value,
+            fecha_fin: fechaFin.value,
+            ...(tipoCambioManual.value
+                ? { tipo_cambio: tipoCambioManual.value }
+                : {}),
+        },
         { preserveScroll: true },
     );
 }
@@ -33,7 +63,7 @@ function exportar() {
     window.location.href = `/produccion/excel?fecha=${fechaFin.value}&pais=colombia`;
 }
 
-const fmt = (v: number) => {
+const fmt = (v: any) => {
     const n = parseFloat(v) || 0;
     return n % 1 === 0
         ? n.toLocaleString('es-PE')
@@ -42,6 +72,13 @@ const fmt = (v: number) => {
               maximumFractionDigits: 2,
           });
 };
+
+const convertir = (v: any): number => {
+    const tc = tipoCambioActivo.value;
+    return tc ? (parseFloat(v) || 0) * tc : parseFloat(v) || 0;
+};
+
+const fmtTC = (v: any) => fmt(convertir(v));
 
 const datosFiltrados = computed(() => {
     const q = busqueda.value.toLowerCase();
@@ -60,11 +97,12 @@ const totalGeneral = computed(() =>
 
 const promedioGeneral = computed(() => {
     if (!datosFiltrados.value.length) return 0;
-    const suma = datosFiltrados.value.reduce(
-        (s, r) => s + (parseFloat(r.promedio) || 0),
-        0,
+    return (
+        datosFiltrados.value.reduce(
+            (s, r) => s + (parseFloat(r.promedio) || 0),
+            0,
+        ) / datosFiltrados.value.length
     );
-    return suma / datosFiltrados.value.length;
 });
 
 const totalesHora = computed(() => {
@@ -97,15 +135,24 @@ function intensidad(valor: number, maxHora: number): string {
     if (pct >= 0.2) return 'text-rose-600';
     return 'text-slate-600';
 }
+
+const COL_W = { num: 40, modelo: 130, centro: 160, serie: 110 } as const;
+
+const stickyLeft = {
+    num: 0,
+    modelo: COL_W.num,
+    centro: COL_W.num + COL_W.modelo,
+    serie: COL_W.num + COL_W.modelo + COL_W.centro,
+} as const;
 </script>
 
 <template>
     <Head title="Producción Colombia" />
     <Layout>
         <div class="min-h-screen bg-[#080c18] font-sans text-white">
-            <div class="mx-auto max-w-[1700px] px-4 py-6">
+            <div class="mx-auto max-w-[1700px] px-2 py-4 sm:px-4 sm:py-6">
                 <header
-                    class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
+                    class="mb-6 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-end sm:justify-between"
                 >
                     <div>
                         <p
@@ -114,12 +161,12 @@ function intensidad(valor: number, maxHora: number): string {
                             Producción — Colombia
                         </p>
                         <h1
-                            class="text-3xl font-black tracking-tight text-white"
+                            class="text-2xl font-black tracking-tight text-white sm:text-3xl"
                         >
                             Reporte
                             <span class="text-rose-400">por Centro</span>
                         </h1>
-                        <p class="mt-1 text-sm text-slate-500">
+                        <p class="mt-1 text-xs text-slate-500 sm:text-sm">
                             {{ filtros.fecha_inicio }} →
                             {{ filtros.fecha_fin }} ·
                             {{ datos.length }} máquinas
@@ -149,140 +196,236 @@ function intensidad(valor: number, maxHora: number): string {
                         >
                             ↓ Excel
                         </button>
+                        <div
+                            class="flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-800 px-3 py-2"
+                        >
+                            <span class="text-xs text-slate-500">TC:</span>
+                            <input
+                                v-model="tipoCambioManual"
+                                type="number"
+                                step="0.0001"
+                                class="w-20 bg-transparent text-sm text-white focus:outline-none"
+                                @blur="actualizarTipoCambio"
+                            />
+                            <span
+                                v-if="tipoCambioOrigen === 'manual'"
+                                class="text-[10px] text-amber-400"
+                                title="Tipo de cambio manual"
+                                >✎</span
+                            >
+                            <span
+                                v-else-if="tipoCambioApi"
+                                class="text-[10px] text-emerald-400"
+                                title="Tipo de cambio API"
+                                >✓</span
+                            >
+                        </div>
                     </div>
                 </header>
 
-                <div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div class="mb-4 grid grid-cols-2 gap-3 sm:mb-6 sm:grid-cols-4">
                     <div
-                        class="rounded-xl border border-slate-800 bg-slate-800/40 p-4"
+                        class="rounded-xl border border-slate-800 bg-slate-800/40 p-3 sm:p-4"
                     >
                         <p
-                            class="text-xs tracking-wider text-slate-500 uppercase"
+                            class="text-[10px] tracking-wider text-slate-500 uppercase sm:text-xs"
                         >
                             Máquinas
                         </p>
-                        <p class="mt-1 text-2xl font-black text-white">
+                        <p
+                            class="mt-1 text-xl font-black text-white sm:text-2xl"
+                        >
                             {{ datos.length }}
                         </p>
                     </div>
                     <div
-                        class="rounded-xl border border-rose-900/50 bg-rose-900/20 p-4"
+                        class="rounded-xl border border-rose-900/50 bg-rose-900/20 p-3 sm:p-4"
                     >
                         <p
-                            class="text-xs tracking-wider text-rose-600 uppercase"
+                            class="text-[10px] tracking-wider text-rose-600 uppercase sm:text-xs"
                         >
                             Total
                         </p>
-                        <p class="mt-1 text-2xl font-black text-rose-400">
-                            {{ fmt(totalGeneral) }}
+                        <p
+                            class="mt-1 text-xl font-black text-rose-400 sm:text-2xl"
+                        >
+                            {{ fmtTC(totalGeneral) }}
                         </p>
                     </div>
                     <div
-                        class="rounded-xl border border-amber-900/50 bg-amber-900/20 p-4"
+                        class="rounded-xl border border-amber-900/50 bg-amber-900/20 p-3 sm:p-4"
                     >
                         <p
-                            class="text-xs tracking-wider text-amber-600 uppercase"
+                            class="text-[10px] tracking-wider text-amber-600 uppercase sm:text-xs"
                         >
                             Promedio/hora
                         </p>
-                        <p class="mt-1 text-2xl font-black text-amber-400">
-                            {{ fmt(promedioGeneral) }}
+                        <p
+                            class="mt-1 text-xl font-black text-amber-400 sm:text-2xl"
+                        >
+                            {{ fmtTC(promedioGeneral) }}
                         </p>
                     </div>
                     <div
-                        class="rounded-xl border border-slate-800 bg-slate-800/40 p-4"
+                        class="rounded-xl border border-slate-800 bg-slate-800/40 p-3 sm:p-4"
                     >
                         <p
-                            class="text-xs tracking-wider text-slate-500 uppercase"
+                            class="text-[10px] tracking-wider text-slate-500 uppercase sm:text-xs"
                         >
                             Centros
                         </p>
-                        <p class="mt-1 text-2xl font-black text-white">
+                        <p
+                            class="mt-1 text-xl font-black text-white sm:text-2xl"
+                        >
                             {{ centros.length }}
                         </p>
                     </div>
                 </div>
 
-                <div class="mb-4">
+                <div class="mb-3">
                     <input
                         v-model="busqueda"
                         type="search"
                         placeholder="Buscar centro, modelo o serie..."
-                        class="w-full rounded-xl border border-slate-700 bg-slate-800/60 px-4 py-3 text-sm text-white placeholder-slate-600 focus:border-rose-500 focus:outline-none sm:w-80"
+                        class="w-full rounded-xl border border-slate-700 bg-slate-800/60 px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:border-rose-500 focus:outline-none sm:w-80 sm:py-3"
                     />
                 </div>
 
                 <div
                     class="overflow-x-auto rounded-2xl border border-slate-800/80 bg-slate-900/60 pb-2 shadow-2xl"
                 >
-                    <table class="w-full min-w-[800px] border-collapse text-sm">
+                    <table class="w-full border-collapse text-sm">
+                        <colgroup>
+                            <col
+                                :style="{
+                                    width: COL_W.num + 'px',
+                                    minWidth: COL_W.num + 'px',
+                                }"
+                            />
+                            <col
+                                :style="{
+                                    width: COL_W.modelo + 'px',
+                                    minWidth: COL_W.modelo + 'px',
+                                }"
+                            />
+                            <col
+                                :style="{
+                                    width: COL_W.centro + 'px',
+                                    minWidth: COL_W.centro + 'px',
+                                }"
+                            />
+                            <col
+                                :style="{
+                                    width: COL_W.serie + 'px',
+                                    minWidth: COL_W.serie + 'px',
+                                }"
+                            />
+                        </colgroup>
+
                         <thead>
                             <tr class="border-b border-slate-800">
                                 <th
-                                    class="px-3 py-3 text-center text-[10px] font-bold tracking-widest text-slate-500 uppercase"
+                                    class="z-20 bg-slate-900 px-2 py-3 text-center text-[10px] font-bold tracking-widest text-slate-500 uppercase"
+                                    :style="{
+                                        position: 'sticky',
+                                        left: stickyLeft.num + 'px',
+                                    }"
                                 >
                                     #
                                 </th>
                                 <th
-                                    class="px-3 py-3 text-left text-[10px] font-bold tracking-widest text-slate-500 uppercase"
+                                    class="z-20 bg-slate-900 px-3 py-3 text-left text-[10px] font-bold tracking-widest text-slate-500 uppercase"
+                                    :style="{
+                                        position: 'sticky',
+                                        left: stickyLeft.modelo + 'px',
+                                    }"
                                 >
                                     Modelo
                                 </th>
                                 <th
-                                    class="px-3 py-3 text-left text-[10px] font-bold tracking-widest text-slate-500 uppercase"
+                                    class="z-20 bg-slate-900 px-3 py-3 text-left text-[10px] font-bold tracking-widest text-slate-500 uppercase"
+                                    :style="{
+                                        position: 'sticky',
+                                        left: stickyLeft.centro + 'px',
+                                    }"
                                 >
                                     Centro
                                 </th>
                                 <th
-                                    class="sticky left-[310px] z-20 border-r border-slate-800 bg-slate-900 px-3 py-3 text-center text-[10px] font-bold tracking-widest text-slate-500 uppercase"
+                                    class="z-20 border-r border-slate-800 bg-slate-900 px-3 py-3 text-center text-[10px] font-bold tracking-widest text-slate-500 uppercase"
+                                    :style="{
+                                        position: 'sticky',
+                                        left: stickyLeft.serie + 'px',
+                                    }"
                                 >
                                     Serie
                                 </th>
                                 <th
                                     v-for="h in horas"
                                     :key="h"
-                                    class="border-r border-slate-800/50 px-2 py-3 text-center text-[10px] font-bold tracking-widest text-slate-500 uppercase"
+                                    class="px-2 py-3 text-center text-[10px] font-bold tracking-widest text-slate-500 uppercase"
                                 >
                                     {{ h }}h
                                 </th>
                                 <th
-                                    class="min-w-[70px] border-r border-slate-800 bg-rose-950/40 px-3 py-3 text-center text-[10px] font-bold tracking-widest text-rose-500 uppercase"
+                                    class="min-w-[80px] border-r border-slate-800 bg-rose-950/40 px-3 py-3 text-center text-[10px] font-bold tracking-widest text-rose-500 uppercase"
                                 >
                                     Total
                                 </th>
                                 <th
-                                    class="min-w-[70px] bg-amber-950/40 px-3 py-3 text-center text-[10px] font-bold tracking-widest text-amber-500 uppercase"
+                                    class="min-w-[80px] bg-amber-950/40 px-3 py-3 text-center text-[10px] font-bold tracking-widest text-amber-500 uppercase"
                                 >
                                     Prom/h
                                 </th>
                             </tr>
                         </thead>
+
                         <tbody>
                             <tr
                                 v-for="row in datosFiltrados"
                                 :key="row.item"
-                                class="border-b border-slate-800/40 transition-colors hover:bg-slate-800/30"
+                                class="border-b border-slate-800/40 hover:bg-slate-800/30"
                             >
                                 <td
-                                    class="px-3 py-2 text-center text-xs text-slate-600"
+                                    class="z-10 bg-[#080c18] px-2 py-2 text-center text-xs text-slate-600"
+                                    :style="{
+                                        position: 'sticky',
+                                        left: stickyLeft.num + 'px',
+                                    }"
                                 >
                                     {{ row.item }}
                                 </td>
-                                <td class="px-3 py-2 text-xs text-slate-300">
+                                <td
+                                    class="z-10 bg-[#080c18] px-3 py-2 text-xs text-slate-300"
+                                    :style="{
+                                        position: 'sticky',
+                                        left: stickyLeft.modelo + 'px',
+                                    }"
+                                >
                                     {{ row.modelo }}
                                 </td>
-                                <td class="px-3 py-2 text-xs text-slate-300">
+                                <td
+                                    class="z-10 bg-[#080c18] px-3 py-2 text-xs text-slate-300"
+                                    :style="{
+                                        position: 'sticky',
+                                        left: stickyLeft.centro + 'px',
+                                    }"
+                                >
                                     {{ row.centro }}
                                 </td>
                                 <td
-                                    class="sticky left-[310px] z-10 border-r border-slate-800/50 bg-[#080c18] px-3 py-2 text-center font-mono text-xs text-cyan-400"
+                                    class="z-10 border-r border-slate-800/50 bg-[#080c18] px-3 py-2 text-center font-mono text-xs text-cyan-400"
+                                    :style="{
+                                        position: 'sticky',
+                                        left: stickyLeft.serie + 'px',
+                                    }"
                                 >
                                     {{ row.serie }}
                                 </td>
                                 <td
                                     v-for="h in horas"
                                     :key="h"
-                                    class="border-r border-slate-800/30 px-2 py-2 text-center text-xs tabular-nums transition-colors"
+                                    class="px-2 py-2 text-center text-xs tabular-nums transition-colors"
                                     :class="
                                         intensidad(
                                             parseFloat(row[`h${h}`]) || 0,
@@ -290,27 +433,32 @@ function intensidad(valor: number, maxHora: number): string {
                                         )
                                     "
                                 >
-                                    {{ fmt(row[`h${h}`]) }}
+                                    {{ fmtTC(row[`h${h}`]) }}
                                 </td>
                                 <td
-                                    class="min-w-[70px] border-r border-slate-800 bg-rose-950/20 px-3 py-2 text-right text-xs font-bold text-rose-400 tabular-nums"
+                                    class="min-w-[80px] border-r border-slate-800 bg-rose-950/20 px-3 py-2 text-right text-xs font-bold text-rose-400 tabular-nums"
                                 >
-                                    {{ fmt(row.total) }}
+                                    {{ fmtTC(row.total) }}
                                 </td>
                                 <td
-                                    class="min-w-[70px] bg-amber-950/20 px-3 py-2 text-right text-xs font-bold text-amber-400 tabular-nums"
+                                    class="min-w-[80px] bg-amber-950/20 px-3 py-2 text-right text-xs font-bold text-amber-400 tabular-nums"
                                 >
-                                    {{ fmt(row.promedio) }}
+                                    {{ fmtTC(row.promedio) }}
                                 </td>
                             </tr>
                         </tbody>
+
                         <tfoot>
                             <tr
                                 class="border-t-2 border-slate-700 bg-slate-800/60"
                             >
                                 <td
                                     colspan="4"
-                                    class="border-r border-slate-700 bg-slate-800 px-3 py-3 text-right text-xs font-black tracking-widest text-white uppercase"
+                                    class="z-10 border-r border-slate-700 bg-slate-800 px-3 py-3 text-right text-xs font-black tracking-widest text-white uppercase"
+                                    :style="{
+                                        position: 'sticky',
+                                        left: stickyLeft.num + 'px',
+                                    }"
                                 >
                                     Total
                                 </td>
@@ -319,21 +467,22 @@ function intensidad(valor: number, maxHora: number): string {
                                     :key="h"
                                     class="border-r border-slate-700/50 px-2 py-3 text-center text-xs font-semibold text-rose-400 tabular-nums"
                                 >
-                                    {{ fmt(totalesHora[h]) }}
+                                    {{ fmtTC(totalesHora[h]) }}
                                 </td>
                                 <td
-                                    class="min-w-[70px] border-r border-slate-700 bg-rose-950/40 px-3 py-3 text-right text-sm font-black text-rose-300 tabular-nums"
+                                    class="min-w-[80px] border-r border-slate-700 bg-rose-950/40 px-3 py-3 text-right text-sm font-black text-rose-300 tabular-nums"
                                 >
-                                    {{ fmt(totalGeneral) }}
+                                    {{ fmtTC(totalGeneral) }}
                                 </td>
                                 <td
-                                    class="min-w-[70px] bg-amber-950/40 px-3 py-3 text-right text-sm font-black text-amber-300 tabular-nums"
+                                    class="min-w-[80px] bg-amber-950/40 px-3 py-3 text-right text-sm font-black text-amber-300 tabular-nums"
                                 >
-                                    {{ fmt(promedioGeneral) }}
+                                    {{ fmtTC(promedioGeneral) }}
                                 </td>
                             </tr>
                         </tfoot>
                     </table>
+
                     <p
                         v-if="!datosFiltrados.length"
                         class="py-16 text-center text-slate-600"
