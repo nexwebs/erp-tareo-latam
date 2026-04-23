@@ -87,10 +87,17 @@ class ProduccionController extends Controller
 
     private function buildHoraSelects(int $inicio = self::HORA_INICIO, int $fin = self::HORA_FIN): array
     {
-        return array_map(
-            fn ($h) => "SUM(CASE WHEN HOUR(p.FechaProduccion) = {$h} THEN p.ProduccionFinal ELSE 0 END) as h{$h}",
-            range($inicio, $fin)
-        );
+        $selects = [];
+
+        foreach (range($inicio, $fin) as $h) {
+            if ($h === 8) {
+                $selects[] = "SUM(CASE WHEN HOUR(p.FechaProduccion) <= {$h} THEN p.ProduccionFinal ELSE 0 END) as h{$h}";
+            } else {
+                $selects[] = "SUM(CASE WHEN HOUR(p.FechaProduccion) = {$h} THEN p.ProduccionFinal ELSE 0 END) as h{$h}";
+            }
+        }
+
+        return $selects;
     }
 
     /**
@@ -128,7 +135,7 @@ class ProduccionController extends Controller
             ->join('centros as c', 'p.idCentro', '=', 'c.IdCentro')
             ->join('maquinas as m', 'p.idMaquina', '=', 'm.IdMaquina')
             ->whereBetween(DB::raw('DATE(p.FechaProduccion)'), [$fechaInicio, $fechaFin])
-            ->whereRaw('HOUR(p.FechaProduccion) BETWEEN ? AND ?', [$horaInicio, $horaFin])
+            ->whereRaw('HOUR(p.FechaProduccion) BETWEEN 0 AND ?', [$horaFin])
             ->where('m.EsVisible', 1)
             ->selectRaw('m.Modelo as modelo')
             ->selectRaw('c.NombreCentro as centro')
@@ -151,7 +158,7 @@ class ProduccionController extends Controller
             ->join('centros as c', 'p.idCentro', '=', 'c.IdCentro')
             ->join('maquinas as m', 'p.idMaquina', '=', 'm.IdMaquina')
             ->whereDate('p.FechaProduccion', $fecha)
-            ->whereRaw('HOUR(p.FechaProduccion) BETWEEN ? AND ?', [self::HORA_INICIO, self::HORA_FIN])
+            ->whereRaw('HOUR(p.FechaProduccion) BETWEEN 0 AND ?', [self::HORA_FIN])
             ->where('m.EsVisible', 1)
             ->selectRaw('m.Modelo as modelo')
             ->selectRaw('c.NombreCentro as centro')
@@ -312,7 +319,7 @@ class ProduccionController extends Controller
             ->join('centros as c', 'p.idCentro', '=', 'c.IdCentro')
             ->join('maquinas as m', 'p.idMaquina', '=', 'm.IdMaquina')
             ->whereDate('p.FechaProduccion', $fecha)
-            ->whereRaw('HOUR(p.FechaProduccion) BETWEEN ? AND ?', [self::HORA_INICIO, self::HORA_FIN])
+            ->whereRaw('HOUR(p.FechaProduccion) BETWEEN 0 AND ?', [self::HORA_FIN])
             ->where('m.EsVisible', 1);
 
         $rawRows = (clone $baseQuery)
