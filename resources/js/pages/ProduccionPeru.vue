@@ -6,14 +6,13 @@ import Layout from '../components/Layout.vue';
 const props = defineProps<{
     datos: any[];
     centros: any[];
-    filtros: { fecha_inicio: string; fecha_fin: string };
+    filtros: { fecha: string };
     horaInicio: number;
     horaFin: number;
     tipoCambio: number | null;
 }>();
 
-const fechaInicio = ref(props.filtros.fecha_inicio);
-const fechaFin = ref(props.filtros.fecha_fin);
+const fecha = ref(props.filtros.fecha);
 const busqueda = ref('');
 
 const horas = computed(() => {
@@ -25,42 +24,13 @@ const horas = computed(() => {
 function filtrar() {
     router.get(
         '/produccion/peru',
-        { fecha_inicio: fechaInicio.value, fecha_fin: fechaFin.value },
+        { fecha: fecha.value },
         { preserveScroll: true },
     );
 }
 
 function exportar() {
-    const n = (v: any) => (parseFloat(v) || 0).toFixed(2);
-    const horasArr = horas.value;
-
-    const th = (t: string) =>
-        `<th style="background:#1e3a5f;color:#34d399;padding:6px 10px;border:1px solid #334155;white-space:nowrap">${t}</th>`;
-    const td = (t: any, extra = '') =>
-        `<td style="padding:5px 10px;border:1px solid #1e293b;${extra}">${t}</td>`;
-
-    const encabezado = `<tr>${th('#')}${th('Modelo')}${th('Centro')}${th('Serie')}${horasArr.map((h) => th(`${h}h`)).join('')}${th('Total')}${th('Prom/h')}</tr>`;
-
-    const filas = datosFiltrados.value
-        .map(
-            (r) =>
-                `<tr>${td(r.item)}${td(r.modelo)}${td(r.centro)}${td(r.serie, 'font-family:monospace;color:#22d3ee')}${horasArr.map((h) => td(n(r[`h${h}`]), 'text-align:right')).join('')}${td(n(r.total), 'text-align:right;font-weight:bold;color:#34d399')}${td(n(r.promedio), 'text-align:right;font-weight:bold')}</tr>`,
-        )
-        .join('');
-
-    const totales = `<tr style="background:#1e293b;font-weight:bold">${td('')}${td('')}${td('')}${td('TOTAL', 'font-weight:bold')}${horasArr.map((h) => td(n(totalesHora.value[h]), 'text-align:right;color:#34d399')).join('')}${td(n(totalGeneral.value), 'text-align:right;color:#34d399;font-size:1.05em')}${td(n(promedioGeneral.value), 'text-align:right;color:#fbbf24;font-size:1.05em')}</tr>`;
-
-    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><style>body{font-family:Arial,sans-serif;font-size:11px;background:#0f172a;color:#e2e8f0}table{border-collapse:collapse;width:100%}</style></head><body><h3 style="color:#34d399;margin-bottom:8px">Producción Perú · ${fechaInicio.value} → ${fechaFin.value}</h3><table>${encabezado}${filas}${totales}</table></body></html>`;
-
-    const blob = new Blob([html], {
-        type: 'application/vnd.ms-excel;charset=utf-8',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `produccion_peru_${fechaInicio.value}_${fechaFin.value}.xls`;
-    a.click();
-    URL.revokeObjectURL(url);
+    window.open(`/produccion/peru/pdf?fecha=${fecha.value}`, '_blank');
 }
 
 const fmt = (v: any) => {
@@ -121,11 +91,11 @@ const maxPorHora = computed(() => {
 });
 
 function intensidad(valor: number, maxHora: number): string {
-    if (!valor || !maxHora) return 'text-slate-700';
+    if (!valor || !maxHora) return 'text-red-600';
     const pct = valor / maxHora;
-    if (pct >= 0.8) return 'text-emerald-300 font-semibold';
-    if (pct >= 0.5) return 'text-emerald-400';
-    if (pct >= 0.2) return 'text-emerald-600';
+    if (pct >= 0.8) return 'text-green-500 font-semibold';
+    if (pct >= 0.5) return 'text-green-600';
+    if (pct >= 0.2) return 'text-green-700';
     return 'text-slate-600';
 }
 
@@ -142,9 +112,9 @@ function colorPromedio(promedio: number): string {
     const v = promedio || 0;
     const { media } = statsPromedio.value;
     if (!media) return 'text-slate-400';
-    if (v >= media) return 'text-emerald-400';
-    if (v >= media * 0.7) return 'text-yellow-400';
-    return 'text-rose-400';
+    if (v >= media) return 'text-green-600';
+    if (v >= media * 0.7) return 'text-amber-500';
+    return 'text-red-600';
 }
 
 const COL_W = { num: 40, modelo: 130, centro: 160, serie: 110 } as const;
@@ -160,7 +130,7 @@ const stickyLeft = {
 <template>
     <Head title="Producción Perú" />
     <Layout>
-        <div class="min-h-screen bg-[#080c18] font-sans text-white">
+        <div class="min-h-screen bg-slate-50 font-sans text-slate-700">
             <div class="mx-auto max-w-[1700px] px-2 py-4 sm:px-4 sm:py-6">
                 <header
                     class="mb-6 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-end sm:justify-between"
@@ -172,47 +142,40 @@ const stickyLeft = {
                             Producción — Perú
                         </p>
                         <h1
-                            class="text-2xl font-black tracking-tight text-white sm:text-3xl"
+                            class="text-2xl font-black tracking-tight text-slate-700 sm:text-3xl"
                         >
                             Reporte
-                            <span class="text-emerald-400">por Centro</span>
+                            <span class="text-green-600">por Centro</span>
                         </h1>
                         <p class="mt-1 text-xs text-slate-500 sm:text-sm">
-                            {{ filtros.fecha_inicio }} →
-                            {{ filtros.fecha_fin }} ·
-                            {{ datos.length }} máquinas
+                            {{ filtros.fecha }} · {{ datos.length }} máquinas
                         </p>
                     </div>
 
                     <div class="flex flex-wrap items-center gap-2">
                         <input
-                            v-model="fechaInicio"
+                            v-model="fecha"
                             type="date"
-                            class="rounded-lg border border-slate-700 bg-slate-800/80 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
-                        />
-                        <input
-                            v-model="fechaFin"
-                            type="date"
-                            class="rounded-lg border border-slate-700 bg-slate-800/80 px-3 py-2 text-sm text-white focus:border-emerald-500 focus:outline-none"
+                            class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-green-500 focus:outline-none"
                         />
                         <button
                             @click="filtrar"
-                            class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-emerald-500 active:scale-95"
+                            class="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-emerald-500 active:scale-95"
                         >
                             Filtrar
                         </button>
                         <button
                             @click="exportar"
-                            class="rounded-lg border border-slate-600 bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-300 transition hover:border-slate-400 hover:text-white active:scale-95"
+                            class="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-slate-400 hover:text-slate-700 active:scale-95"
                         >
-                            ↓ Excel
+                            ↓ PDF
                         </button>
                     </div>
                 </header>
 
                 <div class="mb-4 grid grid-cols-2 gap-3 sm:mb-6 sm:grid-cols-4">
                     <div
-                        class="rounded-xl border border-slate-800 bg-slate-800/40 p-3 sm:p-4"
+                        class="rounded-xl border border-slate-200 bg-white/40 p-3 sm:p-4"
                     >
                         <p
                             class="text-[10px] tracking-wider text-slate-500 uppercase sm:text-xs"
@@ -220,27 +183,27 @@ const stickyLeft = {
                             Máquinas
                         </p>
                         <p
-                            class="mt-1 text-xl font-black text-white sm:text-2xl"
+                            class="mt-1 text-xl font-black text-slate-700 sm:text-2xl"
                         >
                             {{ datos.length }}
                         </p>
                     </div>
                     <div
-                        class="rounded-xl border border-emerald-900/50 bg-emerald-900/20 p-3 sm:p-4"
+                        class="rounded-xl border border-green-200 bg-emerald-900/20 p-3 sm:p-4"
                     >
                         <p
-                            class="text-[10px] tracking-wider text-emerald-600 uppercase sm:text-xs"
+                            class="text-[10px] tracking-wider text-green-700 uppercase sm:text-xs"
                         >
                             Total
                         </p>
                         <p
-                            class="mt-1 text-xl font-black text-emerald-400 sm:text-2xl"
+                            class="mt-1 text-xl font-black text-green-600 sm:text-2xl"
                         >
                             {{ fmt(totalGeneral) }}
                         </p>
                     </div>
                     <div
-                        class="rounded-xl border border-amber-900/50 bg-amber-900/20 p-3 sm:p-4"
+                        class="rounded-xl border border-amber-200 bg-amber-900/20 p-3 sm:p-4"
                     >
                         <p
                             class="text-[10px] tracking-wider text-amber-600 uppercase sm:text-xs"
@@ -254,7 +217,7 @@ const stickyLeft = {
                         </p>
                     </div>
                     <div
-                        class="rounded-xl border border-slate-800 bg-slate-800/40 p-3 sm:p-4"
+                        class="rounded-xl border border-slate-200 bg-white/40 p-3 sm:p-4"
                     >
                         <p
                             class="text-[10px] tracking-wider text-slate-500 uppercase sm:text-xs"
@@ -262,7 +225,7 @@ const stickyLeft = {
                             Centros
                         </p>
                         <p
-                            class="mt-1 text-xl font-black text-white sm:text-2xl"
+                            class="mt-1 text-xl font-black text-slate-700 sm:text-2xl"
                         >
                             {{ centros.length }}
                         </p>
@@ -274,12 +237,12 @@ const stickyLeft = {
                         v-model="busqueda"
                         type="search"
                         placeholder="Buscar centro, modelo o serie..."
-                        class="w-full rounded-xl border border-slate-700 bg-slate-800/60 px-4 py-2.5 text-sm text-white placeholder-slate-600 focus:border-emerald-500 focus:outline-none sm:w-80 sm:py-3"
+                        class="w-full rounded-xl border border-slate-700 bg-white/60 px-4 py-2.5 text-sm text-slate-700 placeholder-slate-600 focus:border-emerald-500 focus:outline-none sm:w-80 sm:py-3"
                     />
                 </div>
 
                 <div
-                    class="overflow-x-auto rounded-2xl border border-slate-800/80 bg-slate-900/60 pb-2 shadow-2xl"
+                    class="overflow-x-auto rounded-2xl border border-slate-200/80 bg-white/60 pb-2 shadow-2xl"
                 >
                     <table class="w-full border-collapse text-sm">
                         <colgroup>
@@ -310,9 +273,9 @@ const stickyLeft = {
                         </colgroup>
 
                         <thead>
-                            <tr class="border-b border-slate-800">
+                            <tr class="border-b border-slate-200">
                                 <th
-                                    class="z-20 bg-slate-900 px-2 py-3 text-center text-[10px] font-bold tracking-widest text-slate-500 uppercase"
+                                    class="z-20 bg-white px-2 py-3 text-center text-[10px] font-bold tracking-widest text-slate-500 uppercase"
                                     :style="{
                                         position: 'sticky',
                                         left: stickyLeft.num + 'px',
@@ -321,7 +284,7 @@ const stickyLeft = {
                                     #
                                 </th>
                                 <th
-                                    class="z-20 bg-slate-900 px-3 py-3 text-left text-[10px] font-bold tracking-widest text-slate-500 uppercase"
+                                    class="z-20 bg-white px-3 py-3 text-left text-[10px] font-bold tracking-widest text-slate-500 uppercase"
                                     :style="{
                                         position: 'sticky',
                                         left: stickyLeft.modelo + 'px',
@@ -330,7 +293,7 @@ const stickyLeft = {
                                     Modelo
                                 </th>
                                 <th
-                                    class="z-20 bg-slate-900 px-3 py-3 text-left text-[10px] font-bold tracking-widest text-slate-500 uppercase"
+                                    class="z-20 bg-white px-3 py-3 text-left text-[10px] font-bold tracking-widest text-slate-500 uppercase"
                                     :style="{
                                         position: 'sticky',
                                         left: stickyLeft.centro + 'px',
@@ -339,7 +302,7 @@ const stickyLeft = {
                                     Centro
                                 </th>
                                 <th
-                                    class="z-20 border-r border-slate-800 bg-slate-900 px-3 py-3 text-center text-[10px] font-bold tracking-widest text-slate-500 uppercase"
+                                    class="z-20 border-r border-slate-200 bg-white px-3 py-3 text-center text-[10px] font-bold tracking-widest text-slate-500 uppercase"
                                     :style="{
                                         position: 'sticky',
                                         left: stickyLeft.serie + 'px',
@@ -355,12 +318,12 @@ const stickyLeft = {
                                     {{ h }}h
                                 </th>
                                 <th
-                                    class="min-w-[80px] border-r border-slate-800 bg-emerald-950/40 px-3 py-3 text-center text-[10px] font-bold tracking-widest text-emerald-500 uppercase"
+                                    class="min-w-[80px] border-r border-slate-200 bg-green-50 px-3 py-3 text-center text-[10px] font-bold tracking-widest text-green-600 uppercase"
                                 >
                                     Total
                                 </th>
                                 <th
-                                    class="min-w-[80px] bg-amber-950/40 px-3 py-3 text-center text-[10px] font-bold tracking-widest text-amber-500 uppercase"
+                                    class="min-w-[80px] bg-amber-50 px-3 py-3 text-center text-[10px] font-bold tracking-widest text-amber-600 uppercase"
                                 >
                                     Prom/h
                                 </th>
@@ -371,10 +334,10 @@ const stickyLeft = {
                             <tr
                                 v-for="row in datosFiltrados"
                                 :key="row.item"
-                                class="border-b border-slate-800/40 hover:bg-slate-800/30"
+                                class="border-b border-slate-200/40 hover:bg-white/30"
                             >
                                 <td
-                                    class="z-10 bg-[#080c18] px-2 py-2 text-center text-xs text-slate-600"
+                                    class="z-10 bg-slate-50 px-2 py-2 text-center text-xs text-slate-600"
                                     :style="{
                                         position: 'sticky',
                                         left: stickyLeft.num + 'px',
@@ -383,7 +346,7 @@ const stickyLeft = {
                                     {{ row.item }}
                                 </td>
                                 <td
-                                    class="z-10 bg-[#080c18] px-3 py-2 text-xs text-slate-300"
+                                    class="z-10 bg-slate-50 px-3 py-2 text-xs text-slate-300"
                                     :style="{
                                         position: 'sticky',
                                         left: stickyLeft.modelo + 'px',
@@ -392,7 +355,7 @@ const stickyLeft = {
                                     {{ row.modelo }}
                                 </td>
                                 <td
-                                    class="z-10 bg-[#080c18] px-3 py-2 text-xs text-slate-300"
+                                    class="z-10 bg-slate-50 px-3 py-2 text-xs text-slate-300"
                                     :style="{
                                         position: 'sticky',
                                         left: stickyLeft.centro + 'px',
@@ -401,7 +364,7 @@ const stickyLeft = {
                                     {{ row.centro }}
                                 </td>
                                 <td
-                                    class="z-10 border-r border-slate-800/50 bg-[#080c18] px-3 py-2 text-center font-mono text-xs text-cyan-400"
+                                    class="z-10 border-r border-slate-200/50 bg-slate-50 px-3 py-2 text-center font-mono text-xs text-cyan-400"
                                     :style="{
                                         position: 'sticky',
                                         left: stickyLeft.serie + 'px',
@@ -423,12 +386,12 @@ const stickyLeft = {
                                     {{ fmt(row[`h${h}`]) }}
                                 </td>
                                 <td
-                                    class="min-w-[80px] border-r border-slate-800 bg-emerald-950/20 px-3 py-2 text-right text-xs font-bold text-emerald-400 tabular-nums"
+                                    class="min-w-[80px] border-r border-slate-200 bg-green-50 px-3 py-2 text-right text-xs font-bold text-green-600 tabular-nums"
                                 >
                                     {{ fmt(row.total) }}
                                 </td>
                                 <td
-                                    class="min-w-[80px] bg-amber-950/20 px-3 py-2 text-right text-xs font-bold tabular-nums"
+                                    class="min-w-[80px] bg-amber-50 px-3 py-2 text-right text-xs font-bold tabular-nums"
                                     :class="colorPromedio(row.promedio)"
                                 >
                                     {{ fmt(row.promedio) }}
@@ -437,12 +400,10 @@ const stickyLeft = {
                         </tbody>
 
                         <tfoot>
-                            <tr
-                                class="border-t-2 border-slate-700 bg-slate-800/60"
-                            >
+                            <tr class="border-t-2 border-slate-700 bg-white/60">
                                 <td
                                     colspan="4"
-                                    class="z-10 border-r border-slate-700 bg-slate-800 px-3 py-3 text-right text-xs font-black tracking-widest text-white uppercase"
+                                    class="z-10 border-r border-slate-700 bg-white px-3 py-3 text-right text-xs font-black tracking-widest text-slate-700 uppercase"
                                     :style="{
                                         position: 'sticky',
                                         left: stickyLeft.num + 'px',
@@ -453,12 +414,12 @@ const stickyLeft = {
                                 <td
                                     v-for="h in horas"
                                     :key="h"
-                                    class="border-r border-slate-700/50 px-2 py-3 text-center text-xs font-semibold text-emerald-400 tabular-nums"
+                                    class="border-r border-slate-700/50 px-2 py-3 text-center text-xs font-semibold text-green-600 tabular-nums"
                                 >
                                     {{ fmt(totalesHora[h]) }}
                                 </td>
                                 <td
-                                    class="min-w-[80px] border-r border-slate-700 bg-emerald-950/40 px-3 py-3 text-right text-sm font-black text-emerald-300 tabular-nums"
+                                    class="min-w-[80px] border-r border-slate-700 bg-green-50 px-3 py-3 text-right text-sm font-black text-green-500 tabular-nums"
                                 >
                                     {{ fmt(totalGeneral) }}
                                 </td>

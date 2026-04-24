@@ -1,15 +1,15 @@
 <template>
     <div
-        class="flex min-h-screen bg-[#0B0E14] font-sans text-slate-300 antialiased"
+        class="flex min-h-screen bg-slate-50 font-sans text-slate-700 antialiased"
     >
         <!-- Sidebar -->
         <aside
-            class="fixed inset-y-0 left-0 z-40 flex flex-col border-r border-slate-800/60 bg-[#0D1117] transition-all duration-300 ease-in-out"
+            class="fixed inset-y-0 left-0 z-40 flex flex-col border-r border-slate-200 bg-white shadow-sm transition-all duration-300 ease-in-out"
             :class="sidebarOpen ? 'w-64' : 'w-0 lg:w-[72px]'"
         >
             <!-- Logo Area -->
             <div
-                class="relative z-10 flex h-16 items-center justify-between border-b border-slate-800/60 bg-[#0D1117] px-4"
+                class="relative z-10 flex h-16 items-center justify-between border-b border-slate-200 bg-white px-4"
             >
                 <div
                     class="flex flex-1 cursor-pointer items-center gap-3 overflow-hidden"
@@ -23,12 +23,12 @@
                     </div>
                     <div v-show="sidebarOpen" class="truncate">
                         <h1
-                            class="truncate text-[14px] font-semibold tracking-tight text-slate-100"
+                            class="truncate text-[14px] font-semibold tracking-tight text-slate-700"
                         >
                             Planet ERP
                         </h1>
                         <p
-                            class="truncate text-[9px] font-medium tracking-widest text-emerald-400 uppercase"
+                            class="truncate text-[9px] font-medium tracking-widest text-emerald-600 uppercase"
                         >
                             Tareo Latam
                         </p>
@@ -36,9 +36,9 @@
                 </div>
                 <button
                     @click.stop="sidebarOpen = !sidebarOpen"
-                    class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-slate-700 bg-slate-800/50 text-slate-500 transition-colors hover:bg-slate-700 hover:text-slate-300"
+                    class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-slate-300 bg-slate-100 text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-700"
                     :class="{
-                        'absolute top-5 right-[-12px] z-50 border-slate-700 bg-[#0D1117]':
+                        'absolute top-5 right-[-12px] z-50 border-slate-300 bg-white':
                             !sidebarOpen,
                     }"
                 >
@@ -85,7 +85,7 @@
 
                 <div
                     v-if="sidebarOpen"
-                    class="mt-3 border-t border-slate-800/60 pt-3 pb-2 pl-3"
+                    class="mt-3 border-t border-slate-200 pt-3 pb-2 pl-3"
                 >
                     <p
                         class="text-[10px] font-medium tracking-widest text-slate-500 uppercase"
@@ -93,7 +93,7 @@
                         Producción
                     </p>
                 </div>
-                <div v-else class="mx-2 my-3 h-px bg-slate-800/60"></div>
+                <div v-else class="mx-2 my-3 h-px bg-slate-200"></div>
 
                 <NavGroup
                     icon="calculator"
@@ -121,7 +121,7 @@
                         :active="isActive('/produccion/australia')"
                         >Australia</NavSubItem
                     >
-                    <div class="mx-3 my-1 h-px bg-slate-800/60"></div>
+                    <div class="mx-3 my-1 h-px bg-slate-200"></div>
                     <NavSubItem
                         href="/produccion/controlar"
                         :active="isActive('/produccion/controlar')"
@@ -178,23 +178,23 @@
 
             <!-- User Profile -->
             <div
-                class="flex-shrink-0 border-t border-slate-800/60 bg-[#0D1117]/80 transition-all duration-300"
+                class="flex-shrink-0 border-t border-slate-200 bg-slate-50 transition-all duration-300"
             >
                 <div v-if="sidebarOpen" class="flex flex-col gap-3 p-4">
                     <div class="flex items-center gap-3">
                         <div
-                            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-700 bg-slate-800 font-semibold text-slate-300"
+                            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-100 font-semibold text-slate-600"
                         >
                             {{ userInitials }}
                         </div>
                         <div class="min-w-0 flex-1 pr-1">
                             <p
-                                class="truncate text-[12px] leading-tight font-medium text-slate-200"
+                                class="truncate text-[12px] leading-tight font-medium text-slate-700"
                             >
                                 {{ userName }}
                             </p>
                             <p
-                                class="mt-0.5 text-[10px] font-medium text-emerald-400"
+                                class="mt-0.5 text-[10px] font-medium text-emerald-600"
                             >
                                 {{ userRole }}
                             </p>
@@ -202,20 +202,20 @@
                     </div>
                     <button
                         @click="logout"
-                        class="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-[11px] font-medium text-slate-400 transition-all hover:border-rose-700/50 hover:bg-rose-900/20 hover:text-rose-400"
+                        class="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-medium text-slate-500 transition-all hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600"
                     >
                         Cerrar Sesión
                     </button>
                 </div>
                 <div v-else class="p-2">
                     <div
-                        class="mb-2 flex aspect-square w-full items-center justify-center rounded-lg border border-slate-700 bg-slate-800 text-xs font-medium text-slate-400"
+                        class="mb-2 flex aspect-square w-full items-center justify-center rounded-lg border border-slate-200 bg-slate-100 text-xs font-medium text-slate-500"
                     >
                         {{ userInitials }}
                     </div>
                     <button
                         @click="logout"
-                        class="flex w-full justify-center rounded-lg border border-transparent py-2 text-slate-500 transition-colors hover:border-rose-700/50 hover:bg-rose-900/20 hover:text-rose-400"
+                        class="flex w-full justify-center rounded-lg border border-transparent py-2 text-slate-400 transition-colors hover:border-rose-300 hover:bg-rose-50 hover:text-rose-500"
                         title="Cerrar sesión"
                     >
                         <svg
@@ -250,11 +250,11 @@
         >
             <!-- Header -->
             <header
-                class="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-slate-800/60 bg-[#0D1117]/80 px-4 backdrop-blur-sm sm:px-5"
+                class="sticky top-0 z-20 flex h-14 items-center justify-between border-b border-slate-200 bg-white/80 px-4 backdrop-blur-sm sm:px-5"
             >
                 <button
                     @click="sidebarOpen = !sidebarOpen"
-                    class="mr-2 rounded-md bg-slate-800/50 p-2 text-slate-400 hover:text-emerald-400 lg:hidden"
+                    class="mr-2 rounded-md bg-slate-100 p-2 text-slate-500 hover:text-emerald-600 lg:hidden"
                 >
                     <svg
                         class="h-4 w-4"
@@ -285,18 +285,18 @@
                             d="M13 5l7 7-7 7M5 5l7 7-7 7"
                         />
                     </svg>
-                    <p class="truncate text-[12px] font-medium text-slate-400">
+                    <p class="truncate text-[12px] font-medium text-slate-600">
                         <span class="text-slate-500">Navegando:</span>
-                        <span class="ml-1 font-medium text-slate-200">{{
+                        <span class="ml-1 font-medium text-slate-700">{{
                             originBreadcrumb
                         }}</span>
                     </p>
                 </div>
                 <div
-                    class="ml-3 flex shrink-0 items-center gap-3 border-l border-slate-800/60 pl-3"
+                    class="ml-3 flex shrink-0 items-center gap-3 border-l border-slate-200 pl-3"
                 >
                     <div
-                        class="flex items-center gap-1.5 rounded-md border border-slate-800 bg-slate-900/50 px-2.5 py-1.5 text-[11px] font-medium text-slate-400"
+                        class="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-medium text-slate-500"
                     >
                         <svg
                             class="h-3.5 w-3.5 text-emerald-500"

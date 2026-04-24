@@ -3,9 +3,116 @@
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
+/* Tema: Corporate Premium Light Mode */
 @theme inline {
     --font-sans:
         Instrument Sans, ui-sans-serif, system-ui, sans-serif,
         'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
+
+    /* Colores Corporate Premium */
+    --color-bg-main: #f8fafc;
+    --color-bg-card: #ffffff;
+    --color-bg-sidebar: #1e293b;
+    --color-text-primary: #0f172a;
+    --color-text-secondary: #64748b;
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-border: #e2e8f0;
+}
+
+/* Override global para fondo claro */
+body {
+    background-color: #f8fafc;
+    color: #0f172a;
+}
+
+/* Tarjetas con sombra flotante */
+.bg-slate-900\/60,
+.bg-slate-800\/40,
+.bg-slate-800\/80 {
+    background-color: #ffffff !important;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Bordes más suaves */
+.border-slate-800,
+.border-slate-700 {
+    border-color: #e2e8f0 !important;
+}
+
+/* Tablas con filas alternadas */
+table tbody tr:nth-child(even) {
+    background-color: #f8fafc;
+}
+
+table tbody tr:hover {
+    background-color: #f1f5f9;
+}
+
+/* Sidebar tetap dark untuk sentuhan profesional */
+.bg-\[\#080c18\] {
+    background-color: #1e293b !important;
+}
+
+/* Inputs con estilo limpio */
+input,
+select,
+button {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    color: #0f172a;
+}
+
+input:focus,
+select:focus {
+    border-color: #3b82f6;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Textos */
+.text-white {
+    color: #0f172a;
+}
+
+.text-slate-300,
+.text-slate-400,
+.text-slate-500,
+.text-slate-600 {
+    color: #64748b;
+}
+
+.text-slate-700 {
+    color: #334155;
+}
+
+/* KPIs con diseño premium */
+.rounded-xl {
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.rounded-xl:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Scrollbar lebih halus */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #CBD5E1B;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
 }

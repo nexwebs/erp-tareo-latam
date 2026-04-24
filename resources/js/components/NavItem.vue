@@ -13,8 +13,8 @@ defineProps<{
         class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[12px] font-medium transition-all duration-200"
         :class="
             active
-                ? 'border-l-2 border-emerald-500 bg-slate-800/70 text-emerald-400'
-                : 'text-slate-400 hover:bg-slate-800/40 hover:text-slate-200'
+                ? 'border-l-2 border-emerald-500 bg-emerald-50 text-emerald-600'
+                : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600'
         "
     >
         <svg
