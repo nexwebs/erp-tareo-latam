@@ -34,7 +34,7 @@ const paisActual = computed(() => paisNombre[pais.value] ?? pais.value);
 
 function filtrar() {
     router.get(
-        '/produccion/controlar',
+        '/produccion/eficiencia',
         { fecha: fecha.value, fecha_fin: fechaFin.value, pais: pais.value },
         { preserveScroll: true },
     );

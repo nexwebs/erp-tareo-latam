@@ -9,33 +9,10 @@ const props = defineProps<{
     filtros: { fecha: string };
     horaInicio: number;
     horaFin: number;
-    tipoCambio: number | null;
 }>();
 
 const fecha = ref(props.filtros.fecha);
 const busqueda = ref('');
-const tipoCambioManual = ref<number | null>(props.tipoCambio);
-
-const tipoCambioApi = computed(() => props.tipoCambio);
-const tipoCambioActivo = computed(
-    () => tipoCambioManual.value ?? props.tipoCambio,
-);
-const tipoCambioOrigen = computed(() =>
-    tipoCambioManual.value ? 'manual' : 'api',
-);
-
-const actualizarTipoCambio = () => {
-    if (tipoCambioManual.value && tipoCambioManual.value > 0) {
-        router.get(
-            '/produccion/colombia',
-            {
-                fecha: fecha.value,
-                tipo_cambio: tipoCambioManual.value,
-            },
-            { preserveScroll: true },
-        );
-    }
-};
 
 const horas = computed(() => {
     const arr: number[] = [];
@@ -46,12 +23,7 @@ const horas = computed(() => {
 function filtrar() {
     router.get(
         '/produccion/colombia',
-        {
-            fecha: fecha.value,
-            ...(tipoCambioManual.value
-                ? { tipo_cambio: tipoCambioManual.value }
-                : {}),
-        },
+        { fecha: fecha.value },
         { preserveScroll: true },
     );
 }
@@ -77,13 +49,6 @@ const fmt = (v: any) => {
               maximumFractionDigits: 2,
           });
 };
-
-const convertir = (v: any): number => {
-    const tc = tipoCambioActivo.value;
-    return tc ? (parseFloat(v) || 0) * tc : parseFloat(v) || 0;
-};
-
-const fmtTC = (v: any) => fmt(convertir(v));
 
 const datosFiltrados = computed(() => {
     const q = busqueda.value.toLowerCase();
@@ -212,30 +177,6 @@ const stickyLeft = {
                         >
                             ↓ PDF
                         </button>
-                        <div
-                            class="flex items-center gap-2 rounded-lg border border-slate-600 bg-white px-3 py-2"
-                        >
-                            <span class="text-xs text-slate-500">TC:</span>
-                            <input
-                                v-model="tipoCambioManual"
-                                type="number"
-                                step="0.0001"
-                                class="w-20 bg-transparent text-sm text-slate-700 focus:outline-none"
-                                @blur="actualizarTipoCambio"
-                            />
-                            <span
-                                v-if="tipoCambioOrigen === 'manual'"
-                                class="text-[10px] text-amber-400"
-                                title="Tipo de cambio manual"
-                                >✎</span
-                            >
-                            <span
-                                v-else-if="tipoCambioApi"
-                                class="text-[10px] text-green-600"
-                                title="Tipo de cambio API"
-                                >✓</span
-                            >
-                        </div>
                     </div>
                 </header>
 
@@ -265,7 +206,7 @@ const stickyLeft = {
                         <p
                             class="mt-1 text-xl font-black text-red-600 sm:text-2xl"
                         >
-                            {{ fmtTC(totalGeneral) }}
+                            {{ fmt(totalGeneral) }}
                         </p>
                     </div>
                     <div
@@ -279,7 +220,7 @@ const stickyLeft = {
                         <p
                             class="mt-1 text-xl font-black text-amber-400 sm:text-2xl"
                         >
-                            {{ fmtTC(promedioGeneral) }}
+                            {{ fmt(promedioGeneral) }}
                         </p>
                     </div>
                     <div
@@ -449,18 +390,18 @@ const stickyLeft = {
                                         )
                                     "
                                 >
-                                    {{ fmtTC(row[`h${h}`]) }}
+                                    {{ fmt(row[`h${h}`]) }}
                                 </td>
                                 <td
                                     class="min-w-[80px] border-r border-slate-200 bg-red-50 px-3 py-2 text-right text-xs font-bold text-red-600 tabular-nums"
                                 >
-                                    {{ fmtTC(row.total) }}
+                                    {{ fmt(row.total) }}
                                 </td>
                                 <td
                                     class="min-w-[80px] bg-amber-50 px-3 py-2 text-right text-xs font-bold tabular-nums"
                                     :class="colorPromedio(row.promedio)"
                                 >
-                                    {{ fmtTC(row.promedio) }}
+                                    {{ fmt(row.promedio) }}
                                 </td>
                             </tr>
                         </tbody>
@@ -482,17 +423,17 @@ const stickyLeft = {
                                     :key="h"
                                     class="border-r border-slate-700/50 px-2 py-3 text-center text-xs font-semibold text-red-600 tabular-nums"
                                 >
-                                    {{ fmtTC(totalesHora[h]) }}
+                                    {{ fmt(totalesHora[h]) }}
                                 </td>
                                 <td
                                     class="min-w-[80px] border-r border-slate-700 bg-rose-950/40 px-3 py-3 text-right text-sm font-black text-rose-300 tabular-nums"
                                 >
-                                    {{ fmtTC(totalGeneral) }}
+                                    {{ fmt(totalGeneral) }}
                                 </td>
                                 <td
                                     class="min-w-[80px] bg-amber-950/40 px-3 py-3 text-right text-sm font-black text-amber-300 tabular-nums"
                                 >
-                                    {{ fmtTC(promedioGeneral) }}
+                                    {{ fmt(promedioGeneral) }}
                                 </td>
                             </tr>
                         </tfoot>

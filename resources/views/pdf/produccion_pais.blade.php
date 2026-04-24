@@ -104,7 +104,10 @@
         tbody td.right { text-align: right; font-variant-numeric: tabular-nums; }
         tbody td.mono  { font-family: 'Courier New', monospace; color: #0891b2; font-size: {{ $esLandscape ? '4.5px' : '5.5px' }}; }
         tbody td.total { font-weight: 700; color: #065f46; }
-        tbody td.prom  { font-weight: 700; color: #92400e; }
+        tbody td.prom  { font-weight: 700; }
+        tbody td.prom-green { color: #059669; }
+        tbody td.prom-amber { color: #d97706; }
+        tbody td.prom-red { color: #dc2626; }
 
         .h-zero { color: #dc2626 !important; font-weight: 700; }
         .h-low  { color: #475569; }
@@ -164,9 +167,6 @@
         </div>
         <div style="text-align:right">
             <p class="generated">Generado: {{ now()->format('d/m/Y H:i') }}</p>
-            @if($tipoCambio && $tipoCambio != 1)
-            <p class="tc">T/C: {{ number_format($tipoCambio, 4) }}</p>
-            @endif
         </div>
     </div>
 
@@ -184,10 +184,10 @@
             ? array_sum(array_map(fn($r) => (float)($r->promedio ?? 0), $datos)) / count($datos)
             : 0;
 
-        $tc  = $tipoCambio && $tipoCambio != 1 ? (float)$tipoCambio : 1;
+        $tc  = 1;
 
-        $fmtHora = function(float $v) use ($tc): string {
-            $n = $v * $tc;
+        $fmtHora = function(float $v): string {
+            $n = $v;
             if ($n <= 0) return '0';
             if ($n >= 1_000_000_000) return rtrim(rtrim(number_format($n/1_000_000_000, 2, '.', ''), '0'), '.') . 'MM';
             if ($n >= 1_000_000)     return rtrim(rtrim(number_format($n/1_000_000,     2, '.', ''), '0'), '.') . 'M';
@@ -197,8 +197,8 @@
                 : number_format($n, 2, '.', ',');
         };
 
-        $fmt = function(float $v) use ($tc): string {
-            $n = $v * $tc;
+        $fmt = function(float $v): string {
+            $n = $v;
             return fmod(round($n, 2), 1) == 0
                 ? number_format($n, 0,  '.', ',')
                 : number_format($n, 2, '.', ',');

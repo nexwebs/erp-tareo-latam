@@ -122,11 +122,13 @@
                         >Australia</NavSubItem
                     >
                     <div class="mx-3 my-1 h-px bg-slate-200"></div>
+
                     <NavSubItem
                         href="/produccion/eficiencia"
                         :active="isActive('/produccion/eficiencia')"
                         >Eficiencia</NavSubItem
                     >
+                    <div class="mx-3 my-1 h-px bg-slate-200"></div>
                 </NavGroup>
 
                 <!-- <NavGroup
@@ -360,7 +362,7 @@ const isGroupActive = (groupName) => {
             '/produccion/colombia',
             '/produccion/australia',
             '/produccion/hora',
-            '/produccion/controlar',
+            '/produccion/eficiencia',
         ].includes(path);
     }
     if (groupName === 'consultas') {
@@ -385,7 +387,7 @@ const originBreadcrumb = computed(() => {
     if (path.startsWith('/produccion/colombia')) return 'Producción > Colombia';
     if (path.startsWith('/produccion/australia'))
         return 'Producción > Australia';
-    if (path.startsWith('/produccion/controlar'))
+    if (path.startsWith('/produccion/eficiencia'))
         return 'Producción > Controlar';
     if (path.startsWith('/consultas/datos')) return 'Consultas > Datos';
     if (path.startsWith('/consultas/maquinas')) return 'Consultas > Máquinas';

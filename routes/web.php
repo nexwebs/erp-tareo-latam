@@ -19,10 +19,10 @@ Route::get('/produccion/chile', [ProduccionController::class, 'chile'])->middlew
 Route::get('/produccion/colombia', [ProduccionController::class, 'colombia'])->middleware('auth')->name('produccion.colombia');
 Route::get('/produccion/australia', [ProduccionController::class, 'australia'])->middleware('auth')->name('produccion.australia');
 Route::get('/produccion/hora', [ProduccionController::class, 'hora'])->middleware('auth')->name('produccion.hora');
-Route::get('/produccion/controlar', [ProduccionController::class, 'controlar'])->middleware('auth')->name('produccion.controlar');
+Route::get('/produccion/eficiencia', [ProduccionController::class, 'controlar'])->middleware('auth')->name('produccion.eficiencia');
 Route::get('/produccion/exportar', [ProduccionController::class, 'exportarCuadre'])->middleware('auth')->name('produccion.exportar');
 Route::get('/produccion/excel', [ProduccionController::class, 'exportarExcel'])->middleware('auth')->name('produccion.excel');
 
-Route::get('/produccion/controlar/pdf', [ProduccionController::class, 'controlarPdf'])->middleware('auth')->name('produccion.controlar.pdf');
-Route::get('/produccion/controlar/{pais}/pdf', [ProduccionController::class, 'controlarPdf'])->middleware('auth')->name('produccion.controlar.pais.pdf');
+Route::get('/produccion/eficiencia/pdf', [ProduccionController::class, 'controlarPdf'])->middleware('auth')->name('produccion.eficiencia.pdf');
+Route::get('/produccion/eficiencia/{pais}/pdf', [ProduccionController::class, 'controlarPdf'])->middleware('auth')->name('produccion.eficiencia.pais.pdf');
 Route::get('/produccion/{pais}/pdf', [ProduccionController::class, 'exportarPdf'])->middleware('auth')->name('produccion.pdf');
