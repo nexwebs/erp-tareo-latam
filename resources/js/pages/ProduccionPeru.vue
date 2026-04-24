@@ -30,7 +30,15 @@ function filtrar() {
 }
 
 function exportar() {
-    window.open(`/produccion/peru/pdf?fecha=${fecha.value}`, '_blank');
+    const url = `/produccion/peru/pdf?fecha=${fecha.value}`;
+    const printWindow = window.open(url, '_blank');
+    printWindow?.addEventListener('load', () => {
+        printWindow.document.title = `Producción Perú - ${fecha.value}`;
+        printWindow.print();
+        printWindow.matchMedia('print').addEventListener('change', (e) => {
+            if (!e.matches) printWindow.close();
+        });
+    });
 }
 
 const fmt = (v: any) => {

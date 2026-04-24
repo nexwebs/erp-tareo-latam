@@ -451,4 +451,13 @@ END$$
 DELIMITER ;
 
 
+CALL rpt_tareo_centros_latam('2026-02-01','2026-02-01','peru'); -- 27 segundos la sp 
 CALL rpt_tareo_centros_latam('2026-02-01','2026-02-01','chile'); -- 27 segundos la sp 
+CALL rpt_tareo_centros_latam('2026-02-01','2026-02-01','colombia'); -- 27 segundos la sp 
+CALL rpt_tareo_centros_latam('2026-02-01','2026-02-01','australia'); -- 27 segundos la sp 
+
+
+        WHEN 'chile'     THEN 'produccionchile'
+        WHEN 'colombia'  THEN 'produccioncolombia'
+        WHEN 'australia' THEN 'produccionaustralia'
+        ELSE                  'produccionperu'

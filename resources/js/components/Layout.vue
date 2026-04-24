@@ -123,9 +123,9 @@
                     >
                     <div class="mx-3 my-1 h-px bg-slate-200"></div>
                     <NavSubItem
-                        href="/produccion/controlar"
-                        :active="isActive('/produccion/controlar')"
-                        >Controlar</NavSubItem
+                        href="/produccion/eficiencia"
+                        :active="isActive('/produccion/eficiencia')"
+                        >Eficiencia</NavSubItem
                     >
                 </NavGroup>
 

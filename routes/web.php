@@ -23,6 +23,6 @@ Route::get('/produccion/controlar', [ProduccionController::class, 'controlar'])-
 Route::get('/produccion/exportar', [ProduccionController::class, 'exportarCuadre'])->middleware('auth')->name('produccion.exportar');
 Route::get('/produccion/excel', [ProduccionController::class, 'exportarExcel'])->middleware('auth')->name('produccion.excel');
 
-Route::get('/produccion/{pais}/pdf', [ProduccionController::class, 'exportarPdf'])->middleware('auth')->name('produccion.pdf');
 Route::get('/produccion/controlar/pdf', [ProduccionController::class, 'controlarPdf'])->middleware('auth')->name('produccion.controlar.pdf');
 Route::get('/produccion/controlar/{pais}/pdf', [ProduccionController::class, 'controlarPdf'])->middleware('auth')->name('produccion.controlar.pais.pdf');
+Route::get('/produccion/{pais}/pdf', [ProduccionController::class, 'exportarPdf'])->middleware('auth')->name('produccion.pdf');

@@ -136,10 +136,15 @@ function colorPromedio(promDiario: number): string {
 }
 
 function exportar() {
-    window.open(
-        `/produccion/controlar/pdf?fecha=${fecha.value}&pais=${pais.value}`,
-        '_blank',
-    );
+    const url = `/produccion/controlar/pdf?fecha=${fecha.value}&pais=${pais.value}`;
+    const printWindow = window.open(url, '_blank');
+    printWindow?.addEventListener('load', () => {
+        printWindow.document.title = `Controlar ${paisActual.value} - ${fecha.value}`;
+        printWindow.print();
+        printWindow.matchMedia('print').addEventListener('change', (e) => {
+            if (!e.matches) printWindow.close();
+        });
+    });
 }
 </script>
 

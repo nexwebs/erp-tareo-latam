@@ -3,48 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controlar Producción {{ ucfirst($pais) }} — {{ $fecha }}</title>
+    <title>Controlar {{ ucfirst($pais) }} — {{ $fecha }}</title>
     <style>
+        @php $esLandscape = in_array($pais, ['chile', 'colombia', 'australia']); @endphp
+        @page { size: A4 {{ $esLandscape ? 'landscape' : 'portrait' }}; margin: {{ $esLandscape ? '5mm' : '12mm' }}; }
+        @media print {
+            @page { margin: {{ $esLandscape ? '4mm' : '10mm' }}; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 8px; color: #1e293b; background: #fff; }
-        .page { padding: 12mm 10mm; }
-        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid #7c3aed; }
-        .label { font-size: 7px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: #7c3aed; margin-bottom: 3px; }
-        h1 { font-size: 16px; font-weight: 900; color: #0f172a; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 7px; color: #1e293b; background: #fff; }
+        .page { padding: 10mm 8mm; }
+        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 2px solid #7c3aed; }
+        .label { font-size: 6px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: #7c3aed; margin-bottom: 2px; }
+        h1 { font-size: 13px; font-weight: 900; color: #0f172a; }
         h1 span { color: #7c3aed; }
-        .sub { font-size: 7px; color: #64748b; margin-top: 3px; }
+        .sub { font-size: 6px; color: #64748b; margin-top: 2px; }
         .header-right { text-align: right; }
-        .generated { font-size: 7px; color: #94a3b8; }
+        .generated { font-size: 6px; color: #94a3b8; }
         
-        .kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 10px; }
-        .kpi { border: 1px solid #e2e8f0; border-radius: 6px; padding: 6px 8px; background: #f8fafc; }
-        .kpi .kpi-label { font-size: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #94a3b8; margin-bottom: 2px; }
-        .kpi .kpi-value { font-size: 12px; font-weight: 900; color: #0f172a; }
+        .kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-bottom: 8px; }
+        .kpi { border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 6px; background: #f8fafc; }
+        .kpi .kpi-label { font-size: 5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #94a3b8; margin-bottom: 1px; }
+        .kpi .kpi-value { font-size: 10px; font-weight: 900; color: #0f172a; }
         .kpi.violet { border-color: #7c3aed; background: #f5f3ff; }
-        .kpi.violet .kpi-label { color: #7c3aed; }
         
         table { width: 100%; border-collapse: collapse; }
         thead tr { background: #7c3aed; }
-        thead th { padding: 4px 3px; font-size: 6px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #fff; text-align: center; border: 1px solid #6d28d9; white-space: nowrap; }
+        thead th { padding: 3px 2px; font-size: 5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #fff; text-align: center; border: 1px solid #6d28d9; }
         thead th.left { text-align: left; }
         
         tbody tr:nth-child(even) { background: #f8fafc; }
-        tbody tr:nth-child(odd) { background: #fff; }
-        tbody td { padding: 3px; font-size: 6.5px; color: #334155; border: 1px solid #e2e8f0; text-align: center; }
+        tbody td { padding: 2px; font-size: 6px; color: #334155; border: 1px solid #e2e8f0; text-align: center; }
         tbody td.left { text-align: left; }
         tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
         tbody td.mono { font-family: 'Courier New', monospace; color: #0891b2; }
         
         .bg-green { color: #059669; }
         .bg-red { color: #dc2626; }
-        .bg-amber { color: #d97706; }
         
         tfoot tr { background: #1e293b; }
-        tfoot td { padding: 4px 3px; font-size: 7px; font-weight: 700; color: #fff; border: 1px solid #334155; text-align: center; }
+        tfoot td { padding: 3px 2px; font-size: 6px; font-weight: 700; color: #fff; border: 1px solid #334155; text-align: center; }
         tfoot td.num { text-align: right; }
         tfoot td.label { text-align: right; color: #94a3b8; text-transform: uppercase; }
         
-        .footer { margin-top: 8px; display: flex; justify-content: space-between; font-size: 6px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 4px; }
+        .footer { margin-top: 6px; display: flex; justify-content: space-between; font-size: 5.5px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 3px; }
+        
+        th.col-total, td.col-total { width: 50px; min-width: 50px; }
+        th.col-prom, td.col-prom { width: 48px; min-width: 48px; }
     </style>
 </head>
 <body>
@@ -138,5 +144,6 @@
         <span>{{ ucfirst($pais) }} · {{ $fecha }} · {{ count($datos) }} máquinas</span>
     </div>
 </div>
+<script>document.title = 'Controlar {{ ucfirst($pais) }} - {{ $fecha }}';</script>
 </body>
 </html>

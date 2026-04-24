@@ -641,9 +641,8 @@ class ProduccionController extends Controller
         ]);
     }
 
-    public function exportarPdf(Request $request)
+    public function exportarPdf(string $pais, Request $request)
     {
-        $pais = $request->get('pais', 'peru');
         $fecha = $request->get('fecha', now()->toDateString());
 
         $metodo = match ($pais) {
@@ -653,8 +652,7 @@ class ProduccionController extends Controller
             default => 'peru',
         };
 
-        $method = $metodo;
-        $rawRows = DB::select("CALL rpt_centro_produccion_{$method}(?)", [$fecha]);
+        $rawRows = DB::select("CALL rpt_centro_produccion_{$metodo}(?)", [$fecha]);
 
         $datos = array_map(function ($row, $i) {
             $row = (array) $row;

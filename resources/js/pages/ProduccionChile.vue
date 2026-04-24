@@ -148,7 +148,15 @@ function colorPromedio(promedio: number): string {
 }
 
 function exportar() {
-    window.open(`/produccion/chile/pdf?fecha=${fecha.value}`, '_blank');
+    const url = `/produccion/chile/pdf?fecha=${fecha.value}`;
+    const printWindow = window.open(url, '_blank');
+    printWindow?.addEventListener('load', () => {
+        printWindow.document.title = `Producción Chile - ${fecha.value}`;
+        printWindow.print();
+        printWindow.matchMedia('print').addEventListener('change', (e) => {
+            if (!e.matches) printWindow.close();
+        });
+    });
 }
 
 const COL_W = { serie: 110 } as const;

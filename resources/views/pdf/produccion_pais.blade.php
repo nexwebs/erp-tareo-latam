@@ -1,178 +1,155 @@
+@php
+    $esLandscape = in_array($pais, ['chile', 'colombia', 'australia']);
+    $colorPais = match($pais) {
+        'chile'     => ['header' => '#0369a1', 'thead' => '#0369a1', 'border' => '#0284c7'],
+        'colombia'  => ['header' => '#b91c1c', 'thead' => '#b91c1c', 'border' => '#dc2626'],
+        'australia' => ['header' => '#b45309', 'thead' => '#b45309', 'border' => '#d97706'],
+        default     => ['header' => '#0e7490', 'thead' => '#0e7490', 'border' => '#0c6478'],
+    };
+@endphp
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Producción {{ ucfirst($pais) }} — {{ $fecha }}</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; margin: 0; padding: 0; box-sizing: border-box; }
+
+        @page {
+            size: A4 {{ $esLandscape ? 'landscape' : 'portrait' }};
+            margin: {{ $esLandscape ? '5mm 6mm' : '12mm' }};
+        }
 
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
-            font-size: 8px;
+            font-size: {{ $esLandscape ? '6px' : '7px' }};
             color: #1e293b;
             background: #fff;
         }
 
-        .page {
-            padding: 12mm 10mm;
-        }
+        .page { padding: {{ $esLandscape ? '4mm 5mm' : '10mm 8mm' }}; }
 
         .header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 10px;
-            padding-bottom: 8px;
-            border-bottom: 2px solid #0e7490;
+            margin-bottom: 6px;
+            padding-bottom: 5px;
+            border-bottom: 2px solid {{ $colorPais['header'] }};
         }
-
-        .header-left .label {
-            font-size: 7px;
-            font-weight: 700;
-            letter-spacing: 0.15em;
-            text-transform: uppercase;
-            color: #0e7490;
-            margin-bottom: 3px;
+        .label {
+            font-size: 5.5px; font-weight: 700;
+            letter-spacing: 0.15em; text-transform: uppercase;
+            color: {{ $colorPais['header'] }}; margin-bottom: 2px;
         }
-
-        .header-left h1 {
-            font-size: 16px;
-            font-weight: 900;
-            color: #0f172a;
-            letter-spacing: -0.02em;
-        }
-
-        .header-left h1 span {
-            color: #0e7490;
-        }
-
-        .header-left .sub {
-            font-size: 7px;
-            color: #64748b;
-            margin-top: 3px;
-        }
-
-        .header-right {
-            text-align: right;
-        }
-
-        .header-right .generated {
-            font-size: 7px;
-            color: #94a3b8;
-        }
+        h1 { font-size: {{ $esLandscape ? '11px' : '13px' }}; font-weight: 900; color: #0f172a; }
+        h1 span { color: {{ $colorPais['header'] }}; }
+        .sub { font-size: 5.5px; color: #64748b; margin-top: 2px; }
+        .generated { font-size: 5.5px; color: #94a3b8; }
+        @if($tipoCambio && $tipoCambio != 1)
+        .tc { font-size: 5.5px; color: #94a3b8; margin-top: 1px; }
+        @endif
 
         .kpis {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
-            margin-bottom: 10px;
+            gap: 3px;
+            margin-bottom: 6px;
         }
-
         .kpi {
             border: 1px solid #e2e8f0;
-            border-radius: 6px;
-            padding: 6px 8px;
+            border-radius: 3px;
+            padding: 3px 5px;
             background: #f8fafc;
         }
-
-        .kpi .kpi-label {
-            font-size: 6px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: #94a3b8;
-            margin-bottom: 2px;
+        .kpi-label {
+            font-size: 4.5px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.1em;
+            color: #94a3b8; margin-bottom: 1px;
         }
-
-        .kpi .kpi-value {
-            font-size: 12px;
-            font-weight: 900;
-            color: #0f172a;
+        .kpi-value { font-size: {{ $esLandscape ? '9px' : '10px' }}; font-weight: 900; color: #0f172a; }
+        .kpi.accent {
+            border-color: {{ $colorPais['header'] }};
+            background: #f0f9ff;
         }
+        .kpi.accent .kpi-label { color: {{ $colorPais['header'] }}; }
+        .kpi.accent .kpi-value { color: {{ $colorPais['header'] }}; }
+        .kpi.amber { border-color: #d97706; background: #fffbeb; }
+        .kpi.amber .kpi-label { color: #b45309; }
+        .kpi.amber .kpi-value { color: #92400e; }
 
-        .kpi.green  { border-color: #059669; background: #ecfdf5; }
-        .kpi.green  .kpi-label { color: #059669; }
-        .kpi.green  .kpi-value { color: #065f46; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 
-        .kpi.amber  { border-color: #d97706; background: #fffbeb; }
-        .kpi.amber  .kpi-label { color: #d97706; }
-        .kpi.amber  .kpi-value { color: #92400e; }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            table-layout: auto;
-        }
-
-        thead tr {
-            background: #0e7490;
-        }
-
+        thead tr { background: {{ $colorPais['thead'] }} !important; }
         thead th {
-            padding: 4px 3px;
-            font-size: 6.5px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: #fff;
+            padding: {{ $esLandscape ? '2px 1px' : '3px 2px' }};
+            font-size: {{ $esLandscape ? '4px' : '5px' }};
+            font-weight: 700; text-transform: uppercase;
+            letter-spacing: 0.04em; color: #fff !important;
             text-align: center;
-            border: 1px solid #0c6478;
-            white-space: nowrap;
+            border: 1px solid {{ $colorPais['border'] }};
         }
-
         thead th.left { text-align: left; }
 
-        tbody tr:nth-child(even) { background: #f8fafc; }
-        tbody tr:nth-child(odd)  { background: #fff; }
-
-        tbody tr:hover { background: #f0f9ff; }
-
+        tbody tr:nth-child(even) { background: #f8fafc !important; }
+        tbody tr:nth-child(odd)  { background: #ffffff !important; }
         tbody td {
-            padding: 3px 3px;
-            font-size: 7px;
+            padding: {{ $esLandscape ? '1.5px 1px' : '2px' }};
+            font-size: {{ $esLandscape ? '5px' : '6px' }};
             color: #334155;
             border: 1px solid #e2e8f0;
             text-align: center;
-            white-space: nowrap;
         }
+        tbody td.left  { text-align: left; }
+        tbody td.right { text-align: right; font-variant-numeric: tabular-nums; }
+        tbody td.mono  { font-family: 'Courier New', monospace; color: #0891b2; font-size: {{ $esLandscape ? '4.5px' : '5.5px' }}; }
+        tbody td.total { font-weight: 700; color: #065f46; }
+        tbody td.prom  { font-weight: 700; color: #92400e; }
 
-        tbody td.left   { text-align: left; }
-        tbody td.mono   { font-family: 'Courier New', monospace; font-size: 6.5px; color: #0e7490; }
-        tbody td.num    { text-align: right; font-variant-numeric: tabular-nums; }
-        tbody td.total  { font-weight: 700; color: #065f46; text-align: right; }
-        tbody td.prom   { font-weight: 700; color: #92400e; text-align: right; }
-        tbody td.center-name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
+        .h-zero { color: #dc2626 !important; font-weight: 700; }
+        .h-low  { color: #475569; }
+        .h-mid  { color: #15803d; font-weight: 600; }
+        .h-high { color: #14532d; font-weight: 700; }
 
-        .h-zero { color: #cbd5e1; }
-        .h-low  { color: #6b7280; }
-        .h-mid  { color: #15803d; }
-        .h-high { color: #065f46; font-weight: 600; }
-
-        tfoot tr {
-            background: #1e293b;
-        }
-
+        tfoot tr { background: #1e293b !important; }
         tfoot td {
-            padding: 4px 3px;
-            font-size: 7.5px;
-            font-weight: 800;
-            color: #fff;
+            padding: {{ $esLandscape ? '2px 1px' : '3px 2px' }};
+            font-size: {{ $esLandscape ? '5px' : '6px' }};
+            font-weight: 700; color: #fff !important;
             border: 1px solid #334155;
             text-align: center;
         }
+        tfoot td.right { text-align: right; }
+        tfoot td.label { text-align: right; color: #94a3b8 !important; text-transform: uppercase; }
 
-        tfoot td.num { text-align: right; color: #6ee7b7; }
-        tfoot td.label { text-align: right; color: #94a3b8; letter-spacing: 0.08em; text-transform: uppercase; }
+        @if($esLandscape)
+        th.c-num   { width: 14px; } td.c-num   { width: 14px; }
+        th.c-mod   { width: 42px; } td.c-mod   { width: 42px; }
+        th.c-cen   { width: 62px; } td.c-cen   { width: 62px; }
+        th.c-ser   { width: 38px; } td.c-ser   { width: 38px; }
+        th.c-hora  { width: 20px; } td.c-hora  { width: 20px; }
+        th.c-tot   { width: 40px; } td.c-tot   { width: 40px; }
+        th.c-prom  { width: 36px; } td.c-prom  { width: 36px; }
+        @else
+        th.c-num   { width: 16px; } td.c-num   { width: 16px; }
+        th.c-mod   { width: 50px; } td.c-mod   { width: 50px; }
+        th.c-cen   { width: 70px; } td.c-cen   { width: 70px; }
+        th.c-ser   { width: 42px; } td.c-ser   { width: 42px; }
+        th.c-hora  { width: 22px; } td.c-hora  { width: 22px; }
+        th.c-tot   { width: 55px; } td.c-tot   { width: 55px; }
+        th.c-prom  { width: 50px; } td.c-prom  { width: 50px; }
+        @endif
+
+        .overflow-hidden { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         .footer {
-            margin-top: 8px;
+            margin-top: 5px;
             display: flex;
             justify-content: space-between;
-            font-size: 6.5px;
+            font-size: 5px;
             color: #94a3b8;
             border-top: 1px solid #e2e8f0;
-            padding-top: 4px;
+            padding-top: 3px;
         }
     </style>
 </head>
@@ -180,38 +157,60 @@
 <div class="page">
 
     <div class="header">
-        <div class="header-left">
+        <div>
             <p class="label">Reporte de Producción — {{ ucfirst($pais) }}</p>
             <h1>Producción <span>{{ $fecha }}</span></h1>
             <p class="sub">{{ count($datos) }} máquinas · Horas {{ $horaInicio }}:00 – {{ $horaFin }}:00</p>
         </div>
-        <div class="header-right">
+        <div style="text-align:right">
             <p class="generated">Generado: {{ now()->format('d/m/Y H:i') }}</p>
             @if($tipoCambio && $tipoCambio != 1)
-            <p class="generated" style="margin-top:2px;">T/C: {{ number_format($tipoCambio, 4) }}</p>
+            <p class="tc">T/C: {{ number_format($tipoCambio, 4) }}</p>
             @endif
         </div>
     </div>
 
     @php
-        $horasArr    = range($horaInicio, $horaFin);
-        $totalGeneral = array_sum(array_map(fn($r) => (float)($r->total ?? 0), $datos));
-
-        $totalesHora = [];
+        $horasArr       = range($horaInicio, $horaFin);
+        $totalGeneral   = array_sum(array_map(fn($r) => (float)($r->total ?? 0), $datos));
+        $totalesHora    = [];
+        $maxPorHora     = [];
         foreach ($horasArr as $h) {
-            $totalesHora[$h] = array_sum(array_map(fn($r) => (float)($r->{"h{$h}"} ?? 0), $datos));
+            $vals = array_map(fn($r) => (float)($r->{"h{$h}"} ?? 0), $datos);
+            $totalesHora[$h] = array_sum($vals);
+            $maxPorHora[$h]  = $vals ? max($vals) : 0;
         }
-
-        $maxPorHora = [];
-        foreach ($horasArr as $h) {
-            $maxPorHora[$h] = max(array_map(fn($r) => (float)($r->{"h{$h}"} ?? 0), $datos) ?: [0]);
-        }
-
         $promedioGeneral = count($datos)
             ? array_sum(array_map(fn($r) => (float)($r->promedio ?? 0), $datos)) / count($datos)
             : 0;
 
-        $fmt = fn($v) => number_format((float)$v, 2, '.', ',');
+        $tc  = $tipoCambio && $tipoCambio != 1 ? (float)$tipoCambio : 1;
+
+        $fmtHora = function(float $v) use ($tc): string {
+            $n = $v * $tc;
+            if ($n <= 0) return '0';
+            if ($n >= 1_000_000_000) return rtrim(rtrim(number_format($n/1_000_000_000, 2, '.', ''), '0'), '.') . 'MM';
+            if ($n >= 1_000_000)     return rtrim(rtrim(number_format($n/1_000_000,     2, '.', ''), '0'), '.') . 'M';
+            if ($n >= 1_000)         return rtrim(rtrim(number_format($n/1_000,         2, '.', ''), '0'), '.') . 'K';
+            return fmod(round($n, 2), 1) == 0
+                ? number_format($n, 0,  '.', ',')
+                : number_format($n, 2, '.', ',');
+        };
+
+        $fmt = function(float $v) use ($tc): string {
+            $n = $v * $tc;
+            return fmod(round($n, 2), 1) == 0
+                ? number_format($n, 0,  '.', ',')
+                : number_format($n, 2, '.', ',');
+        };
+
+        $clsIntensidad = function(float $val, float $max): string {
+            if ($val <= 0 || $max <= 0) return 'h-zero';
+            $pct = $val / $max;
+            if ($pct >= 0.8) return 'h-high';
+            if ($pct >= 0.5) return 'h-mid';
+            return 'h-low';
+        };
     @endphp
 
     <div class="kpis">
@@ -219,16 +218,16 @@
             <p class="kpi-label">Máquinas</p>
             <p class="kpi-value">{{ count($datos) }}</p>
         </div>
-        <div class="kpi green">
-            <p class="kpi-label">Total producción</p>
+        <div class="kpi accent">
+            <p class="kpi-label">Total</p>
             <p class="kpi-value">{{ $fmt($totalGeneral) }}</p>
         </div>
         <div class="kpi amber">
-            <p class="kpi-label">Promedio / hora</p>
+            <p class="kpi-label">Prom/hora</p>
             <p class="kpi-value">{{ $fmt($promedioGeneral) }}</p>
         </div>
         <div class="kpi">
-            <p class="kpi-label">Horas activas</p>
+            <p class="kpi-label">Horas turno</p>
             <p class="kpi-value">{{ $horaFin - $horaInicio + 1 }}h</p>
         </div>
     </div>
@@ -236,22 +235,21 @@
     <table>
         <thead>
             <tr>
-                <th style="width:20px">#</th>
-                <th class="left" style="width:70px">Modelo</th>
-                <th class="left" style="width:100px">Centro</th>
-                <th style="width:55px">Serie</th>
+                <th class="c-num">#</th>
+                <th class="c-mod left">Modelo</th>
+                <th class="c-cen left">Centro</th>
+                <th class="c-ser">Serie</th>
                 @foreach($horasArr as $h)
-                    <th>{{ $h }}h</th>
+                <th class="c-hora">{{ $h }}h</th>
                 @endforeach
-                <th style="width:52px">Total</th>
-                <th style="width:45px">Prom/h</th>
+                <th class="c-tot">Total</th>
+                <th class="c-prom">Prom/h</th>
             </tr>
         </thead>
         <tbody>
             @foreach($datos as $i => $row)
             @php
-                $horasTrab = 0;
-                $totalFila = 0;
+                $horasTrab = 0; $totalFila = 0;
                 foreach ($horasArr as $h) {
                     $v = (float)($row->{"h{$h}"} ?? 0);
                     if ($v > 0) { $horasTrab++; $totalFila += $v; }
@@ -259,24 +257,19 @@
                 $promFila = $horasTrab > 0 ? $totalFila / $horasTrab : 0;
             @endphp
             <tr>
-                <td>{{ $i + 1 }}</td>
-                <td class="left">{{ $row->modelo }}</td>
-                <td class="left center-name">{{ $row->centro }}</td>
-                <td class="mono">{{ $row->serie }}</td>
+                <td class="c-num">{{ $i + 1 }}</td>
+                <td class="c-mod left overflow-hidden">{{ $row->modelo }}</td>
+                <td class="c-cen left overflow-hidden">{{ $row->centro }}</td>
+                <td class="c-ser mono">{{ $row->serie }}</td>
                 @foreach($horasArr as $h)
                 @php
                     $val = (float)($row->{"h{$h}"} ?? 0);
-                    $max = $maxPorHora[$h] ?? 0;
-                    $cls = 'h-zero';
-                    if ($val > 0 && $max > 0) {
-                        $pct = $val / $max;
-                        $cls = $pct >= 0.8 ? 'h-high' : ($pct >= 0.5 ? 'h-mid' : 'h-low');
-                    }
+                    $cls = $clsIntensidad($val, $maxPorHora[$h] ?? 0);
                 @endphp
-                <td class="num {{ $cls }}">{{ $val > 0 ? $fmt($val) : '—' }}</td>
+                <td class="c-hora right {{ $cls }}">{{ $fmtHora($val) }}</td>
                 @endforeach
-                <td class="total">{{ $fmt($row->total) }}</td>
-                <td class="prom">{{ $fmt($promFila) }}</td>
+                <td class="c-tot right total">{{ $fmt($row->total) }}</td>
+                <td class="c-prom right prom">{{ $fmt($promFila) }}</td>
             </tr>
             @endforeach
         </tbody>
@@ -284,10 +277,10 @@
             <tr>
                 <td colspan="4" class="label">Total</td>
                 @foreach($horasArr as $h)
-                    <td class="num">{{ $totalesHora[$h] > 0 ? $fmt($totalesHora[$h]) : '—' }}</td>
+                <td class="c-hora right">{{ $fmtHora($totalesHora[$h]) }}</td>
                 @endforeach
-                <td class="num" style="color:#6ee7b7">{{ $fmt($totalGeneral) }}</td>
-                <td class="num" style="color:#fcd34d">{{ $fmt($promedioGeneral) }}</td>
+                <td class="c-tot right" style="color:#6ee7b7 !important">{{ $fmt($totalGeneral) }}</td>
+                <td class="c-prom right" style="color:#fcd34d !important">{{ $fmt($promedioGeneral) }}</td>
             </tr>
         </tfoot>
     </table>
@@ -296,7 +289,7 @@
         <span>Sistema de Producción LATAM</span>
         <span>{{ ucfirst($pais) }} · {{ $fecha }} · {{ count($datos) }} registros</span>
     </div>
-
 </div>
+<script>document.title = 'Producción {{ ucfirst($pais) }} - {{ $fecha }}';</script>
 </body>
 </html>
