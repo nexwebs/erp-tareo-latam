@@ -85,6 +85,7 @@
             letter-spacing: 0.04em; color: #fff !important;
             text-align: center;
             border: 1px solid {{ $colorPais['border'] }};
+            overflow: hidden;
         }
         thead th.left { text-align: left; }
 
@@ -96,22 +97,29 @@
             color: #334155;
             border: 1px solid #e2e8f0;
             text-align: center;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         tbody td.left  { text-align: left; }
         tbody td.right { text-align: right; font-variant-numeric: tabular-nums; }
-        tbody td.mono  { font-family: 'Courier New', monospace; color: #0891b2; font-size: {{ $esLandscape ? '4.5px' : '5.5px' }}; }
+        tbody td.mono  {
+            font-family: 'Courier New', monospace;
+            font-size: {{ $esLandscape ? '4.5px' : '5.5px' }};
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
         tbody td.total { font-weight: 700; }
-        tbody td.total-green { color: #059669; }
-        tbody td.total-red { color: #dc2626; }
-        tbody td.prom  { font-weight: 700; }
-        tbody td.prom-green { color: #059669; }
-        tbody td.prom-amber { color: #d97706; }
-        tbody td.prom-red { color: #dc2626; }
+        tbody td.total-green { background-color: #dbeafe !important; color: #1d4ed8 !important; }
+        tbody td.total-red   { background-color: #fee2e2 !important; color: #b91c1c !important; }
 
-        .h-zero { color: #dc2626 !important; font-weight: 700; }
-        .h-low  { color: #475569; }
-        .h-mid  { color: #15803d; font-weight: 600; }
-        .h-high { color: #14532d; font-weight: 700; }
+        .h-zero    { color: #dc2626 !important; font-weight: 700; }
+        .h-low     { color: #64747b; }
+        .h-mid     { color: #15803d; font-weight: 600; }
+        .h-high    { color: #14532d; font-weight: 700; }
+        .h-blue-bg { background-color: #dbeafe !important; color: #2563eb !important; }
+        .h-red-bg  { background-color: #fee2e2 !important; color: #dc2626 !important; }
 
         tfoot tr { background: #1e293b !important; }
         tfoot td {
@@ -125,24 +133,22 @@
         tfoot td.label { text-align: right; color: #94a3b8 !important; text-transform: uppercase; }
 
         @if($esLandscape)
-        th.c-num   { width: 14px; } td.c-num   { width: 14px; }
-        th.c-mod   { width: 42px; } td.c-mod   { width: 42px; }
-        th.c-cen   { width: 62px; } td.c-cen   { width: 62px; }
-        th.c-ser   { width: 38px; } td.c-ser   { width: 38px; }
-        th.c-hora  { width: 20px; } td.c-hora  { width: 20px; }
-        th.c-tot   { width: 40px; } td.c-tot   { width: 40px; }
-        th.c-prom  { width: 36px; } td.c-prom  { width: 36px; }
+        th.c-num, td.c-num   { width: 14px; }
+        th.c-mod, td.c-mod   { width: 42px; }
+        th.c-cen, td.c-cen   { width: 62px; }
+        th.c-ser, td.c-ser   { width: 38px; max-width: 38px; }
+        th.c-hora, td.c-hora { width: 20px; }
+        th.c-tot, td.c-tot   { width: 40px; }
+        th.c-prom, td.c-prom { width: 36px; }
         @else
-        th.c-num   { width: 16px; } td.c-num   { width: 16px; }
-        th.c-mod   { width: 50px; } td.c-mod   { width: 50px; }
-        th.c-cen   { width: 70px; } td.c-cen   { width: 70px; }
-        th.c-ser   { width: 42px; } td.c-ser   { width: 42px; }
-        th.c-hora  { width: 22px; } td.c-hora  { width: 22px; }
-        th.c-tot   { width: 55px; } td.c-tot   { width: 55px; }
-        th.c-prom  { width: 50px; } td.c-prom  { width: 50px; }
+        th.c-num, td.c-num   { width: 16px; }
+        th.c-mod, td.c-mod   { width: 50px; }
+        th.c-cen, td.c-cen   { width: 70px; }
+        th.c-ser, td.c-ser   { width: 42px; max-width: 42px; }
+        th.c-hora, td.c-hora { width: 22px; }
+        th.c-tot, td.c-tot   { width: 55px; }
+        th.c-prom, td.c-prom { width: 50px; }
         @endif
-
-        .overflow-hidden { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         .footer {
             margin-top: 5px;
@@ -170,49 +176,79 @@
     </div>
 
     @php
-        $horasArr       = range($horaInicio, $horaFin);
-        $totalGeneral   = array_sum(array_map(fn($r) => (float)($r->total ?? 0), $datos));
-        $totalesHora    = [];
-        $maxPorHora     = [];
+        $horasArr     = range($horaInicio, $horaFin);
+        $totalGeneral = array_sum(array_map(fn($r) => (float)($r->total ?? 0), $datos));
+
+        $totalesHora = [];
+        $maxPorHora  = [];
         foreach ($horasArr as $h) {
             $vals = array_map(fn($r) => (float)($r->{"h{$h}"} ?? 0), $datos);
             $totalesHora[$h] = array_sum($vals);
             $maxPorHora[$h]  = $vals ? max($vals) : 0;
         }
+
         $promedioGeneral = count($datos)
             ? array_sum(array_map(fn($r) => (float)($r->promedio ?? 0), $datos)) / count($datos)
             : 0;
 
+        $promsValidos = array_filter(
+            array_map(fn($r) => (float)($r->promedio ?? 0), $datos),
+            fn($v) => $v > 0
+        );
+        $promMin = $promsValidos ? min($promsValidos) : 0;
+        $promMax = $promsValidos ? max($promsValidos) : 0;
+
+        $bgProm = function(float $v) use ($promMin, $promMax): string {
+            if ($v <= 0 || $promMax <= $promMin) return '';
+            $pct = ($v - $promMin) / ($promMax - $promMin);
+            if ($pct < 0.5) {
+                $t = $pct * 2;
+                $r = 252; $g = (int)(165 + (211 - 165) * $t); $b = (int)(165 + (6 - 165) * $t);
+            } else {
+                $t = ($pct - 0.5) * 2;
+                $r = (int)(252 - (252 - 134) * $t); $g = (int)(211 + (239 - 211) * $t); $b = (int)(6 + (122 - 6) * $t);
+            }
+            return "background-color: rgba({$r},{$g},{$b},0.35) !important; color: #1e293b !important; font-weight: 700;";
+        };
+
+        $fmtVal = function(float $v, bool $soloDecimalesCero = false): string {
+            if ($v == 0) return number_format(0, 2, '.', ',');
+            if ($soloDecimalesCero) {
+                return fmod(round($v, 2), 1) == 0
+                    ? number_format($v, 0, '.', ',')
+                    : number_format($v, 2, '.', ',');
+            }
+            return number_format($v, 2, '.', ',');
+        };
+
+        $esPeru = ($pais === 'peru');
+
         $fmtHora = function(float $v): string {
-            $n = $v;
-            if ($n <= 0) return '0';
-            if ($n >= 1_000_000_000) return rtrim(rtrim(number_format($n/1_000_000_000, 2, '.', ''), '0'), '.') . 'MM';
-            if ($n >= 1_000_000)     return rtrim(rtrim(number_format($n/1_000_000,     2, '.', ''), '0'), '.') . 'M';
-            if ($n >= 1_000)         return rtrim(rtrim(number_format($n/1_000,         2, '.', ''), '0'), '.') . 'K';
-            return fmod(round($n, 2), 1) == 0
-                ? number_format($n, 0, '.', ',')
-                : number_format($n, 2, '.', ',');
+            if ($v <= 0) return number_format(0, 2, '.', ',');
+            if ($v >= 1_000_000_000) return rtrim(rtrim(number_format($v/1_000_000_000, 2, '.', ''), '0'), '.') . 'MM';
+            if ($v >= 1_000_000)     return rtrim(rtrim(number_format($v/1_000_000,     2, '.', ''), '0'), '.') . 'M';
+            if ($v >= 1_000)         return rtrim(rtrim(number_format($v/1_000,         2, '.', ''), '0'), '.') . 'K';
+            return fmod(round($v, 2), 1) == 0
+                ? number_format($v, 0, '.', ',')
+                : number_format($v, 2, '.', ',');
         };
 
-        $fmt = function(float $v): string {
-            $n = $v;
-            return fmod(round($n, 2), 1) == 0
-                ? number_format($n, 0, '.', ',')
-                : number_format($n, 2, '.', ',');
-        };
-
-        $clsIntensidad = function(float $val, float $max): string {
-            if ($val <= 0 || $max <= 0) return 'h-zero';
-            $pct = $val / $max;
-            if ($pct >= 0.8) return 'h-high';
-            if ($pct >= 0.5) return 'h-mid';
-            return 'h-low';
+        $clsIntensidad = function(float $val, float $max, int $transmitio): string {
+            if ($val > 0) {
+                if ($max <= 0) return '';
+                $pct = $val / $max;
+                if ($pct >= 0.8) return 'h-high';
+                if ($pct >= 0.5) return 'h-mid';
+                if ($pct >= 0.2) return 'h-low';
+                return '';
+            }
+            if ($transmitio) return 'h-blue-bg';
+            return 'h-red-bg';
         };
 
         $colorTotal = function($total, $promedioCentro): string {
             if (!$total || !$promedioCentro) return '';
-            if ($total >= $promedioCentro) return 'total-green';
-            return 'total-red';
+            return ((float)$total >= (float)$promedioCentro) ? 'total-green' : 'total-red';
         };
     @endphp
 
@@ -223,11 +259,11 @@
         </div>
         <div class="kpi accent">
             <p class="kpi-label">Total</p>
-            <p class="kpi-value">{{ $fmt($totalGeneral) }}</p>
+            <p class="kpi-value">{{ $fmtVal($totalGeneral, !$esPeru) }}</p>
         </div>
         <div class="kpi amber">
             <p class="kpi-label">Prom/hora</p>
-            <p class="kpi-value">{{ $fmt($promedioGeneral) }}</p>
+            <p class="kpi-value">{{ $fmtVal($promedioGeneral, !$esPeru) }}</p>
         </div>
         <div class="kpi">
             <p class="kpi-label">Horas turno</p>
@@ -252,28 +288,31 @@
         <tbody>
             @foreach($datos as $i => $row)
                 @php
-                    $horasTrab = 0; $totalFila = 0;
+                    $horasTrab = 0;
+                    $totalFila = 0;
                     foreach ($horasArr as $h) {
                         $v = (float)($row->{"h{$h}"} ?? 0);
                         if ($v > 0) { $horasTrab++; $totalFila += $v; }
                     }
-                    $promFila = $horasTrab > 0 ? $totalFila / $horasTrab : 0;
-                    $totalCls = $colorTotal(($row->total ?? 0), ($row->promedioCentro ?? 0));
+                    $promFila  = $horasTrab > 0 ? $totalFila / $horasTrab : 0;
+                    $totalCls  = $colorTotal($row->total ?? 0, $row->promedioCentro ?? 0);
+                    $bgPromStr = $bgProm($promFila);
                 @endphp
                 <tr>
                     <td class="c-num">{{ $i + 1 }}</td>
-                    <td class="c-mod left overflow-hidden">{{ $row->modelo }}</td>
-                    <td class="c-cen left overflow-hidden">{{ $row->centro }}</td>
+                    <td class="c-mod left">{{ $row->modelo }}</td>
+                    <td class="c-cen left">{{ $row->centro }}</td>
                     <td class="c-ser mono">{{ $row->serie }}</td>
                     @foreach($horasArr as $h)
                     @php
-                        $val = (float)($row->{"h{$h}"} ?? 0);
-                        $cls = $clsIntensidad($val, $maxPorHora[$h] ?? 0);
+                        $val       = (float)($row->{"h{$h}"} ?? 0);
+                        $transmitio = (int)($row->{"trans_h{$h}"} ?? 0);
+                        $cls       = $clsIntensidad($val, $maxPorHora[$h] ?? 0, $transmitio);
                     @endphp
                     <td class="c-hora right {{ $cls }}">{{ $fmtHora($val) }}</td>
                     @endforeach
-                    <td class="c-tot right total {{ $totalCls }}">{{ $fmt($row->total) }}</td>
-                    <td class="c-prom right prom">{{ $fmt($promFila) }}</td>
+                    <td class="c-tot right total {{ $totalCls }}">{{ $fmtVal((float)($row->total ?? 0), !$esPeru) }}</td>
+                    <td class="c-prom right" style="{{ $bgPromStr }}">{{ $fmtVal($promFila, !$esPeru) }}</td>
                 </tr>
             @endforeach
         </tbody>
@@ -283,8 +322,8 @@
                 @foreach($horasArr as $h)
                 <td class="c-hora right">{{ $fmtHora($totalesHora[$h]) }}</td>
                 @endforeach
-                <td class="c-tot right" style="color:#6ee7b7 !important">{{ $fmt($totalGeneral) }}</td>
-                <td class="c-prom right" style="color:#fcd34d !important">{{ $fmt($promedioGeneral) }}</td>
+                <td class="c-tot right" style="color:#6ee7b7 !important">{{ $fmtVal($totalGeneral, !$esPeru) }}</td>
+                <td class="c-prom right" style="color:#fcd34d !important">{{ $fmtVal($promedioGeneral, !$esPeru) }}</td>
             </tr>
         </tfoot>
     </table>
