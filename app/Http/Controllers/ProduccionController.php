@@ -404,46 +404,68 @@ class ProduccionController extends Controller
             $promDiario = (float) ($arr['total_promedio_diario'] ?? 0);
             $promHistorico = (float) ($arr['promedioCentro'] ?? 0);
             $horasActivas = (int) ($arr['horas_con_produccion'] ?? 0);
+            $horasCero = (int) ($arr['horas_con_produccion_cero'] ?? 0);
             $horasMuertas = (int) ($arr['horas_sin_transmitir'] ?? 0);
 
-            $horasTurno = $horasActivas + $horasMuertas;
+            $horasTurno = $horasActivas + $horasCero + $horasMuertas;
             $eficiencia = $horasTurno > 0
                 ? round(($horasActivas / $horasTurno) * 100, 1)
+                : 0;
+            $eficienciaCero = $horasTurno > 0
+                ? round((($horasActivas + $horasCero) / $horasTurno) * 100, 1)
                 : 0;
 
             $vsHistorico = $promHistorico > 0
                 ? round((($promDiario - $promHistorico) / $promHistorico) * 100, 1)
                 : null;
 
+            $disponibilidad = round((($horasActivas + $horasCero) / 16) * 100, 1);
+
+            $rendimiento = $promHistorico > 0
+                ? round(min($promDiario / $promHistorico, 1.0) * 100, 1)
+                : ($promDiario > 0 ? 100.0 : 0.0);
+
+            $eficienciaReal = round(($disponibilidad / 100) * ($rendimiento / 100) * 100, 1);
+
+            $vsHistorico = $promHistorico > 0
+                ? round((($promDiario - $promHistorico) / $promHistorico) * 100, 1)
+                : null;
+
             return (object) [
-                'item' => $i + 1,
-                'IdMaquina' => $arr['IdMaquina'] ?? null,
-                'Modelo' => $arr['Modelo'] ?? '',
-                'NombreCentro' => $arr['NombreCentro'] ?? '',
-                'Serie' => $arr['Serie'] ?? '',
-                'total' => $total,
-                'dias_con_datos' => $diasConDatos,
-                'total_promedio_diario' => $promDiario,
-                'promedioCentro' => $promHistorico,
-                'horas_con_produccion' => $horasActivas,
-                'horas_sin_transmitir' => $horasMuertas,
-                'eficiencia' => $eficiencia,
-                'vs_historico' => $vsHistorico,
+                'item'                      => $i + 1,
+                'IdMaquina'                 => $arr['IdMaquina'] ?? null,
+                'Modelo'                    => $arr['Modelo'] ?? '',
+                'NombreCentro'              => $arr['NombreCentro'] ?? '',
+                'Serie'                     => $arr['Serie'] ?? '',
+                'total'                     => $total,
+                'dias_con_datos'            => $diasConDatos,
+                'total_promedio_diario'     => $promDiario,
+                'promedioCentro'            => $promHistorico,
+                'horas_con_produccion'      => $horasActivas,
+                'horas_con_produccion_cero' => $horasCero,
+                'horas_sin_transmitir'      => $horasMuertas,
+                'disponibilidad'            => $disponibilidad,
+                'rendimiento'               => $rendimiento,
+                'eficiencia_real'           => $eficienciaReal,
+                'vs_historico'              => $vsHistorico,
             ];
         }, $rawRows, array_keys($rawRows));
 
         $totalGeneral = array_sum(array_column(array_map(fn ($r) => (array) $r, $datos), 'total'));
         $horasActivasTotal = array_sum(array_column(array_map(fn ($r) => (array) $r, $datos), 'horas_con_produccion'));
+        $horasCeroTotal = array_sum(array_column(array_map(fn ($r) => (array) $r, $datos), 'horas_con_produccion_cero'));
         $horasMuertasTotal = array_sum(array_column(array_map(fn ($r) => (array) $r, $datos), 'horas_sin_transmitir'));
-        $horasTurnoTotal = $horasActivasTotal + $horasMuertasTotal;
+        $horasTurnoTotal = $horasActivasTotal + $horasCeroTotal + $horasMuertasTotal;
+
 
         $totales = [
-            'total_general' => $totalGeneral,
-            'conteo_general' => count($datos),
-            'horas_activas_total' => $horasActivasTotal,
-            'horas_muertas_total' => $horasMuertasTotal,
-            'eficiencia_global' => $horasTurnoTotal > 0
-                ? round(($horasActivasTotal / $horasTurnoTotal) * 100, 1)
+            'total_general'         => $totalGeneral,
+            'conteo_general'        => count($datos),
+            'horas_activas_total'   => $horasActivasTotal,
+            'horas_cero_total'      => $horasCeroTotal,
+            'horas_muertas_total'   => $horasMuertasTotal,
+            'disponibilidad_global' => count($datos) > 0
+                ? round((($horasActivasTotal + $horasCeroTotal) / (count($datos) * 16)) * 100, 1)
                 : 0,
         ];
 
@@ -691,9 +713,11 @@ class ProduccionController extends Controller
             $arr['total'] = $arr['total'] ?? 0;
             $arr['total_promedio_diario'] = $arr['total_promedio_diario'] ?? $arr['dias_con_datos'] ?? 0;
             $arr['horas_con_produccion'] = $arr['horas_con_produccion'] ?? 0;
+            $arr['horas_con_produccion_cero'] = $arr['horas_con_produccion_cero'] ?? 0;
             $arr['horas_sin_transmitir'] = $arr['horas_sin_transmitir'] ?? 0;
-            $totalH = $arr['horas_con_produccion'] + $arr['horas_sin_transmitir'];
+            $totalH = $arr['horas_con_produccion'] + $arr['horas_con_produccion_cero'] + $arr['horas_sin_transmitir'];
             $arr['eficiencia'] = $totalH > 0 ? round(($arr['horas_con_produccion'] / $totalH) * 100, 1) : 0;
+            $arr['eficiencia_cero'] = $totalH > 0 ? round(($arr['horas_con_produccion'] + $arr['horas_con_produccion_cero']) / $totalH * 100, 1) : 0;
 
             return (object) $arr;
         }, $rawRows, array_keys($rawRows));

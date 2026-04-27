@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue';
 import { useForm } from '@inertiajs/vue3';
+import { ref } from 'vue';
 
 const form = useForm({ Usu: '', Pass: '' });
 const showPassword = ref(false);

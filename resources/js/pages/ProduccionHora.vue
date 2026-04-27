@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
 import { router, Head } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
 import Layout from '../components/Layout.vue';
 
 const props = defineProps<{
@@ -12,7 +12,11 @@ const props = defineProps<{
 
 const horas = computed(() => {
     const arr: number[] = [];
-    for (let h = props.horaInicio; h <= props.horaFin; h++) arr.push(h);
+
+    for (let h = props.horaInicio; h <= props.horaFin; h++) {
+arr.push(h);
+}
+
     return arr;
 });
 
@@ -50,41 +54,62 @@ const totalGeneral = computed(() =>
 
 const totalesHora = computed(() => {
     const result: Record<number, number> = {};
+
     for (const h of horas.value) {
         result[h] = props.datos.reduce(
             (s, r) => s + (parseFloat(r[`h${h}`]) || 0),
             0,
         );
     }
+
     return result;
 });
 
 const promedioGeneral = computed(() => {
-    if (!props.datos.length) return 0;
+    if (!props.datos.length) {
+return 0;
+}
+
     const suma = props.datos.reduce(
         (s, r) => s + (parseFloat(r.promedio) || 0),
         0,
     );
+
     return suma / props.datos.length;
 });
 
 const maxPorHora = computed(() => {
     const result: Record<number, number> = {};
+
     for (const h of horas.value) {
         result[h] = Math.max(
             ...props.datos.map((r) => parseFloat(r[`h${h}`]) || 0),
             0,
         );
     }
+
     return result;
 });
 
 function intensidad(valor: number, maxHora: number): string {
-    if (!valor || !maxHora) return 'text-red-600';
+    if (!valor || !maxHora) {
+return 'text-red-600';
+}
+
     const pct = valor / maxHora;
-    if (pct >= 0.8) return 'text-green-500 font-semibold';
-    if (pct >= 0.5) return 'text-green-600';
-    if (pct >= 0.2) return 'text-green-700';
+
+    if (pct >= 0.8) {
+return 'text-green-500 font-semibold';
+}
+
+    if (pct >= 0.5) {
+return 'text-green-600';
+}
+
+    if (pct >= 0.2) {
+return 'text-green-700';
+}
+
     return 'text-slate-600';
 }
 </script>

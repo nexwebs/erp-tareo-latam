@@ -46,9 +46,6 @@
         h1 span { color: {{ $colorPais['header'] }}; }
         .sub { font-size: 5.5px; color: #64748b; margin-top: 2px; }
         .generated { font-size: 5.5px; color: #94a3b8; }
-        @if($tipoCambio && $tipoCambio != 1)
-        .tc { font-size: 5.5px; color: #94a3b8; margin-top: 1px; }
-        @endif
 
         .kpis {
             display: grid;
@@ -103,7 +100,9 @@
         tbody td.left  { text-align: left; }
         tbody td.right { text-align: right; font-variant-numeric: tabular-nums; }
         tbody td.mono  { font-family: 'Courier New', monospace; color: #0891b2; font-size: {{ $esLandscape ? '4.5px' : '5.5px' }}; }
-        tbody td.total { font-weight: 700; color: #065f46; }
+        tbody td.total { font-weight: 700; }
+        tbody td.total-green { color: #059669; }
+        tbody td.total-red { color: #dc2626; }
         tbody td.prom  { font-weight: 700; }
         tbody td.prom-green { color: #059669; }
         tbody td.prom-amber { color: #d97706; }
@@ -184,8 +183,6 @@
             ? array_sum(array_map(fn($r) => (float)($r->promedio ?? 0), $datos)) / count($datos)
             : 0;
 
-        $tc  = 1;
-
         $fmtHora = function(float $v): string {
             $n = $v;
             if ($n <= 0) return '0';
@@ -193,14 +190,14 @@
             if ($n >= 1_000_000)     return rtrim(rtrim(number_format($n/1_000_000,     2, '.', ''), '0'), '.') . 'M';
             if ($n >= 1_000)         return rtrim(rtrim(number_format($n/1_000,         2, '.', ''), '0'), '.') . 'K';
             return fmod(round($n, 2), 1) == 0
-                ? number_format($n, 0,  '.', ',')
+                ? number_format($n, 0, '.', ',')
                 : number_format($n, 2, '.', ',');
         };
 
         $fmt = function(float $v): string {
             $n = $v;
             return fmod(round($n, 2), 1) == 0
-                ? number_format($n, 0,  '.', ',')
+                ? number_format($n, 0, '.', ',')
                 : number_format($n, 2, '.', ',');
         };
 
@@ -210,6 +207,12 @@
             if ($pct >= 0.8) return 'h-high';
             if ($pct >= 0.5) return 'h-mid';
             return 'h-low';
+        };
+
+        $colorTotal = function($total, $promedioCentro): string {
+            if (!$total || !$promedioCentro) return '';
+            if ($total >= $promedioCentro) return 'total-green';
+            return 'total-red';
         };
     @endphp
 
@@ -248,29 +251,30 @@
         </thead>
         <tbody>
             @foreach($datos as $i => $row)
-            @php
-                $horasTrab = 0; $totalFila = 0;
-                foreach ($horasArr as $h) {
-                    $v = (float)($row->{"h{$h}"} ?? 0);
-                    if ($v > 0) { $horasTrab++; $totalFila += $v; }
-                }
-                $promFila = $horasTrab > 0 ? $totalFila / $horasTrab : 0;
-            @endphp
-            <tr>
-                <td class="c-num">{{ $i + 1 }}</td>
-                <td class="c-mod left overflow-hidden">{{ $row->modelo }}</td>
-                <td class="c-cen left overflow-hidden">{{ $row->centro }}</td>
-                <td class="c-ser mono">{{ $row->serie }}</td>
-                @foreach($horasArr as $h)
                 @php
-                    $val = (float)($row->{"h{$h}"} ?? 0);
-                    $cls = $clsIntensidad($val, $maxPorHora[$h] ?? 0);
+                    $horasTrab = 0; $totalFila = 0;
+                    foreach ($horasArr as $h) {
+                        $v = (float)($row->{"h{$h}"} ?? 0);
+                        if ($v > 0) { $horasTrab++; $totalFila += $v; }
+                    }
+                    $promFila = $horasTrab > 0 ? $totalFila / $horasTrab : 0;
+                    $totalCls = $colorTotal(($row->total ?? 0), ($row->promedioCentro ?? 0));
                 @endphp
-                <td class="c-hora right {{ $cls }}">{{ $fmtHora($val) }}</td>
-                @endforeach
-                <td class="c-tot right total">{{ $fmt($row->total) }}</td>
-                <td class="c-prom right prom">{{ $fmt($promFila) }}</td>
-            </tr>
+                <tr>
+                    <td class="c-num">{{ $i + 1 }}</td>
+                    <td class="c-mod left overflow-hidden">{{ $row->modelo }}</td>
+                    <td class="c-cen left overflow-hidden">{{ $row->centro }}</td>
+                    <td class="c-ser mono">{{ $row->serie }}</td>
+                    @foreach($horasArr as $h)
+                    @php
+                        $val = (float)($row->{"h{$h}"} ?? 0);
+                        $cls = $clsIntensidad($val, $maxPorHora[$h] ?? 0);
+                    @endphp
+                    <td class="c-hora right {{ $cls }}">{{ $fmtHora($val) }}</td>
+                    @endforeach
+                    <td class="c-tot right total {{ $totalCls }}">{{ $fmt($row->total) }}</td>
+                    <td class="c-prom right prom">{{ $fmt($promFila) }}</td>
+                </tr>
             @endforeach
         </tbody>
         <tfoot>

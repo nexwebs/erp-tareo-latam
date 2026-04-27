@@ -14,43 +14,44 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 7px; color: #1e293b; background: #fff; }
         .page { padding: 10mm 8mm; }
+
         .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 2px solid #7c3aed; }
         .label { font-size: 6px; font-weight: 700; letter-spacing: 0.15em; text-transform: uppercase; color: #7c3aed; margin-bottom: 2px; }
         h1 { font-size: 13px; font-weight: 900; color: #0f172a; }
         h1 span { color: #7c3aed; }
         .sub { font-size: 6px; color: #64748b; margin-top: 2px; }
-        .header-right { text-align: right; }
         .generated { font-size: 6px; color: #94a3b8; }
-        
+
         .kpis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-bottom: 8px; }
         .kpi { border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 6px; background: #f8fafc; }
         .kpi .kpi-label { font-size: 5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #94a3b8; margin-bottom: 1px; }
         .kpi .kpi-value { font-size: 10px; font-weight: 900; color: #0f172a; }
         .kpi.violet { border-color: #7c3aed; background: #f5f3ff; }
-        
+
         table { width: 100%; border-collapse: collapse; }
         thead tr { background: #7c3aed; }
         thead th { padding: 3px 2px; font-size: 5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #fff; text-align: center; border: 1px solid #6d28d9; }
         thead th.left { text-align: left; }
-        
+
         tbody tr:nth-child(even) { background: #f8fafc; }
         tbody td { padding: 2px; font-size: 6px; color: #334155; border: 1px solid #e2e8f0; text-align: center; }
         tbody td.left { text-align: left; }
         tbody td.num { text-align: right; font-variant-numeric: tabular-nums; }
         tbody td.mono { font-family: 'Courier New', monospace; color: #0891b2; }
-        
-        .bg-green { color: #059669; }
-        .bg-red { color: #dc2626; }
-        
+
+        .cell-above { background-color: #dbeafe !important; color: #1d4ed8 !important; font-weight: 700; }
+        .cell-below { background-color: #fee2e2 !important; color: #b91c1c !important; font-weight: 700; }
+
+        .prom-alto  { background-color: #dcfce7 !important; color: #15803d !important; font-weight: 700; }
+        .prom-medio { background-color: #fef9c3 !important; color: #a16207 !important; font-weight: 600; }
+        .prom-bajo  { background-color: #fee2e2 !important; color: #b91c1c !important; font-weight: 700; }
+
         tfoot tr { background: #1e293b; }
         tfoot td { padding: 3px 2px; font-size: 6px; font-weight: 700; color: #fff; border: 1px solid #334155; text-align: center; }
         tfoot td.num { text-align: right; }
         tfoot td.label { text-align: right; color: #94a3b8; text-transform: uppercase; }
-        
+
         .footer { margin-top: 6px; display: flex; justify-content: space-between; font-size: 5.5px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 3px; }
-        
-        th.col-total, td.col-total { width: 50px; min-width: 50px; }
-        th.col-prom, td.col-prom { width: 48px; min-width: 48px; }
     </style>
 </head>
 <body>
@@ -67,12 +68,26 @@
     </div>
 
     @php
-        $total = array_sum(array_map(fn($r) => (float)($r->total ?? 0), $datos));
-        $promDiario = count($datos) ? array_sum(array_map(fn($r) => (float)($r->total_promedio_diario ?? 0), $datos)) / count($datos) : 0;
+        $total       = array_sum(array_map(fn($r) => (float)($r->total ?? 0), $datos));
+        $promDiario  = count($datos) ? array_sum(array_map(fn($r) => (float)($r->total_promedio_diario ?? 0), $datos)) / count($datos) : 0;
         $horasActivas = array_sum(array_map(fn($r) => (int)($r->horas_con_produccion ?? 0), $datos));
         $horasMuertas = array_sum(array_map(fn($r) => (int)($r->horas_sin_transmitir ?? 0), $datos));
-        $eficienciaTotal = ($horasActivas + $horasMuertas) > 0 ? round(($horasActivas / ($horasActivas + $horasMuertas)) * 100, 1) : 0;
+        $eficienciaTotal = ($horasActivas + $horasMuertas) > 0
+            ? round(($horasActivas / ($horasActivas + $horasMuertas)) * 100, 1) : 0;
         $fmt = fn($v) => number_format((float)$v, 2, '.', ',');
+
+        $grupos = [];
+        foreach ($datos as $r) {
+            $c = $r->NombreCentro ?? '';
+            $grupos[$c][] = (float)($r->total ?? 0);
+        }
+        $promPorCentro = [];
+        foreach ($grupos as $c => $vals) {
+            $promPorCentro[$c] = array_sum($vals) / count($vals);
+        }
+
+        $promsValidos = array_filter(array_map(fn($r) => (float)($r->total_promedio_diario ?? 0), $datos), fn($v) => $v > 0);
+        $mediaPromDiario = count($promsValidos) ? array_sum($promsValidos) / count($promsValidos) : 0;
     @endphp
 
     <div class="kpis">
@@ -114,15 +129,31 @@
         </thead>
         <tbody>
             @foreach($datos as $row)
+            @php
+                $totalRow    = (float)($row->total ?? 0);
+                $promCentro  = $promPorCentro[$row->NombreCentro ?? ''] ?? 0;
+                $claseTotal  = $totalRow >= $promCentro ? 'cell-above' : 'cell-below';
+
+                $promRow     = (float)($row->total_promedio_diario ?? 0);
+                if (!$mediaPromDiario) {
+                    $clasePromDia = '';
+                } elseif ($promRow >= $mediaPromDiario) {
+                    $clasePromDia = 'prom-alto';
+                } elseif ($promRow >= $mediaPromDiario * 0.7) {
+                    $clasePromDia = 'prom-medio';
+                } else {
+                    $clasePromDia = 'prom-bajo';
+                }
+            @endphp
             <tr>
                 <td>{{ $row->item }}</td>
                 <td class="left">{{ $row->NombreCentro }}</td>
                 <td class="left">{{ $row->Modelo }}</td>
                 <td class="mono">{{ $row->Serie }}</td>
-                <td class="num">{{ $fmt($row->total) }}</td>
-                <td class="num">{{ $fmt($row->total_promedio_diario) }}</td>
-                <td class="num bg-green">{{ $row->horas_con_produccion }}h</td>
-                <td class="num bg-red">{{ $row->horas_sin_transmitir }}h</td>
+                <td class="num {{ $claseTotal }}">{{ $fmt($row->total) }}</td>
+                <td class="num {{ $clasePromDia }}">{{ $fmt($row->total_promedio_diario) }}</td>
+                <td class="num" style="color:#059669">{{ $row->horas_con_produccion }}h</td>
+                <td class="num" style="color:#dc2626">{{ $row->horas_sin_transmitir }}h</td>
                 <td class="num">{{ $row->eficiencia }}%</td>
             </tr>
             @endforeach

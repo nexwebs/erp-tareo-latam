@@ -327,10 +327,10 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { usePage } from '@inertiajs/vue3';
-import NavItem from './NavItem.vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import NavGroup from './NavGroup.vue';
+import NavItem from './NavItem.vue';
 import NavSubItem from './NavSubItem.vue';
 
 const page = usePage();
@@ -342,6 +342,7 @@ const userName = computed(() => page.props.auth?.user?.Nombres || 'Usuario');
 const userRole = computed(() => page.props.auth?.user?.rol || 'Personal');
 const userInitials = computed(() => {
     const name = userName.value;
+
     return name
         .split(' ')
         .map((n) => n[0])
@@ -355,6 +356,7 @@ const isActive = (path) =>
 
 const isGroupActive = (groupName) => {
     const path = typeof window !== 'undefined' ? window.location.pathname : '';
+
     if (groupName === 'produccion') {
         return [
             '/produccion/peru',
@@ -365,9 +367,11 @@ const isGroupActive = (groupName) => {
             '/produccion/eficiencia',
         ].includes(path);
     }
+
     if (groupName === 'consultas') {
         return ['/consultas/datos', '/consultas/maquinas'].includes(path);
     }
+
     if (groupName === 'reportes') {
         return [
             '/reportes/diario',
@@ -376,26 +380,61 @@ const isGroupActive = (groupName) => {
             '/reportes/comparativo',
         ].includes(path);
     }
+
     return false;
 };
 
 const originBreadcrumb = computed(() => {
     const path = typeof window !== 'undefined' ? window.location.pathname : '';
-    if (path === '/dashboard') return 'Dashboard Principal';
-    if (path.startsWith('/produccion/peru')) return 'Producción > Perú';
-    if (path.startsWith('/produccion/chile')) return 'Producción > Chile';
-    if (path.startsWith('/produccion/colombia')) return 'Producción > Colombia';
-    if (path.startsWith('/produccion/australia'))
-        return 'Producción > Australia';
-    if (path.startsWith('/produccion/eficiencia'))
-        return 'Producción > Controlar';
-    if (path.startsWith('/consultas/datos')) return 'Consultas > Datos';
-    if (path.startsWith('/consultas/maquinas')) return 'Consultas > Máquinas';
-    if (path.startsWith('/reportes/diario')) return 'Reportes > Diario';
-    if (path.startsWith('/reportes/historico')) return 'Reportes > Histórico';
-    if (path.startsWith('/reportes/centros')) return 'Reportes > Centros';
-    if (path.startsWith('/reportes/comparativo'))
-        return 'Reportes > Comparativo';
+
+    if (path === '/dashboard') {
+return 'Dashboard Principal';
+}
+
+    if (path.startsWith('/produccion/peru')) {
+return 'Producción > Perú';
+}
+
+    if (path.startsWith('/produccion/chile')) {
+return 'Producción > Chile';
+}
+
+    if (path.startsWith('/produccion/colombia')) {
+return 'Producción > Colombia';
+}
+
+    if (path.startsWith('/produccion/australia')) {
+return 'Producción > Australia';
+}
+
+    if (path.startsWith('/produccion/eficiencia')) {
+return 'Producción > Eficiencia';
+}
+
+    if (path.startsWith('/consultas/datos')) {
+return 'Consultas > Datos';
+}
+
+    if (path.startsWith('/consultas/maquinas')) {
+return 'Consultas > Máquinas';
+}
+
+    if (path.startsWith('/reportes/diario')) {
+return 'Reportes > Diario';
+}
+
+    if (path.startsWith('/reportes/historico')) {
+return 'Reportes > Histórico';
+}
+
+    if (path.startsWith('/reportes/centros')) {
+return 'Reportes > Centros';
+}
+
+    if (path.startsWith('/reportes/comparativo')) {
+return 'Reportes > Comparativo';
+}
+
     return 'Dashboard';
 });
 
@@ -410,13 +449,16 @@ const updateClock = () => {
 onMounted(() => {
     updateClock();
     timer = setInterval(updateClock, 1000);
+
     if (typeof window !== 'undefined' && window.innerWidth < 1024) {
         sidebarOpen.value = false;
     }
 });
 
 onUnmounted(() => {
-    if (timer) clearInterval(timer);
+    if (timer) {
+clearInterval(timer);
+}
 });
 
 const logout = () => {
