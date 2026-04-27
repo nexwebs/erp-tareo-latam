@@ -52,7 +52,11 @@ const fmtInt = (v: any) => Math.round(parseFloat(v) || 0).toLocaleString('es-PE'
 const datos          = computed(() => props.datos ?? []);
 const datosFiltrados = computed(() => {
     const q = busqueda.value.toLowerCase();
-    if (!q) return datos.value;
+
+    if (!q) {
+return datos.value;
+}
+
     return datos.value.filter(
         (r) =>
             r.NombreCentro?.toLowerCase().includes(q) ||
@@ -64,7 +68,11 @@ const datosFiltrados = computed(() => {
 const totalMostrado         = computed(() => datosFiltrados.value.reduce((s: number, r: any) => s + (parseFloat(r.total) || 0), 0));
 const promedioMostrado      = computed(() => {
     const arr = datosFiltrados.value;
-    if (!arr.length) return 0;
+
+    if (!arr.length) {
+return 0;
+}
+
     return arr.reduce((s: number, r: any) => s + (parseFloat(r.total_promedio_diario) || 0), 0) / arr.length;
 });
 const horasActivasMostradas = computed(() => datosFiltrados.value.reduce((s: number, r: any) => s + (parseInt(r.horas_con_produccion) || 0), 0));
@@ -74,6 +82,7 @@ const horasMuertasMostradas = computed(() => datosFiltrados.value.reduce((s: num
 const disponibilidadMedia = computed(() => {
     const maquinas   = datosFiltrados.value.length;
     const horasTurno = maquinas * 16;
+
     return horasTurno > 0
         ? (((horasActivasMostradas.value + horasCeroMostradas.value) / horasTurno) * 100).toFixed(1)
         : '0';
@@ -81,26 +90,49 @@ const disponibilidadMedia = computed(() => {
 
 const rendimientoMedio = computed(() => {
     const arr = datosFiltrados.value;
-    if (!arr.length) return '0';
+
+    if (!arr.length) {
+return '0';
+}
+
     return (arr.reduce((s: number, r: any) => s + (parseFloat(r.rendimiento) || 0), 0) / arr.length).toFixed(1);
 });
 
 const eficienciaRealMedia = computed(() => {
     const arr = datosFiltrados.value;
-    if (!arr.length) return '0';
+
+    if (!arr.length) {
+return '0';
+}
+
     return (arr.reduce((s: number, r: any) => s + (parseFloat(r.eficiencia_real) || 0), 0) / arr.length).toFixed(1);
 });
 
 function colorEficiencia(ef: number): string {
-    if (ef >= 70) return 'text-emerald-500';
-    if (ef >= 40) return 'text-amber-500';
+    if (ef >= 70) {
+return 'text-emerald-500';
+}
+
+    if (ef >= 40) {
+return 'text-amber-500';
+}
+
     return 'text-red-500';
 }
 
 function colorVsHistorico(vs: number | null): string {
-    if (vs === null) return 'text-slate-400';
-    if (vs >= 0)    return 'text-emerald-500';
-    if (vs >= -20)  return 'text-amber-500';
+    if (vs === null) {
+return 'text-slate-400';
+}
+
+    if (vs >= 0)    {
+return 'text-emerald-500';
+}
+
+    if (vs >= -20)  {
+return 'text-amber-500';
+}
+
     return 'text-red-500';
 }
 
@@ -110,7 +142,9 @@ function exportar() {
     printWindow?.addEventListener('load', () => {
         printWindow.print();
         printWindow.matchMedia('print').addEventListener('change', (e) => {
-            if (!e.matches) printWindow.close();
+            if (!e.matches) {
+printWindow.close();
+}
         });
     });
 }

@@ -257,6 +257,7 @@ class ProduccionController extends Controller
         return $result;
     }
 
+
     public function peru(Request $request)
     {
         $fecha = $request->get('fecha', now()->toDateString());
@@ -267,6 +268,7 @@ class ProduccionController extends Controller
             $row = (array) $row;
             $row['item'] = $i + 1;
             $row['promedio'] = $row['promedioCentro'] ?? 0;
+            $row['colorCentro'] = (int) ($row['colorCentro'] ?? 0);
 
             return (object) $row;
         }, $rawRows, array_keys($rawRows));
@@ -274,11 +276,11 @@ class ProduccionController extends Controller
         $centros = $this->centrosQuery('peru')->orderBy('NombreCentro')->get();
 
         return inertia('ProduccionPeru', [
-            'datos' => $datos,
-            'centros' => $centros,
-            'filtros' => ['fecha' => $fecha],
+            'datos'      => $datos,
+            'centros'    => $centros,
+            'filtros'    => ['fecha' => $fecha],
             'horaInicio' => self::HORA_INICIO,
-            'horaFin' => self::HORA_FIN,
+            'horaFin'    => self::HORA_FIN,
             'tipoCambio' => 1,
         ]);
     }
@@ -293,6 +295,7 @@ class ProduccionController extends Controller
             $row = (array) $row;
             $row['item'] = $i + 1;
             $row['promedio'] = $row['promedioCentro'] ?? 0;
+            $row['colorCentro'] = (int) ($row['colorCentro'] ?? 0);
 
             return (object) $row;
         }, $rawRows, array_keys($rawRows));
@@ -303,11 +306,11 @@ class ProduccionController extends Controller
             ->get();
 
         return inertia('ProduccionChile', [
-            'datos' => $datos,
-            'centros' => $centros,
-            'filtros' => ['fecha' => $fecha],
+            'datos'      => $datos,
+            'centros'    => $centros,
+            'filtros'    => ['fecha' => $fecha],
             'horaInicio' => self::HORA_INICIO,
-            'horaFin' => self::HORA_FIN,
+            'horaFin'    => self::HORA_FIN,
             'tipoCambio' => $this->obtenerTipoCambio('chile'),
         ]);
     }
@@ -322,6 +325,7 @@ class ProduccionController extends Controller
             $row = (array) $row;
             $row['item'] = $i + 1;
             $row['promedio'] = $row['promedioCentro'] ?? 0;
+            $row['colorCentro'] = (int) ($row['colorCentro'] ?? 0);
 
             return (object) $row;
         }, $rawRows, array_keys($rawRows));
@@ -329,11 +333,11 @@ class ProduccionController extends Controller
         $centros = $this->centrosQuery('colombia')->orderBy('NombreCentro')->get();
 
         return inertia('ProduccionColombia', [
-            'datos' => $datos,
-            'centros' => $centros,
-            'filtros' => ['fecha' => $fecha],
+            'datos'      => $datos,
+            'centros'    => $centros,
+            'filtros'    => ['fecha' => $fecha],
             'horaInicio' => self::HORA_INICIO,
-            'horaFin' => self::HORA_FIN,
+            'horaFin'    => self::HORA_FIN,
             'tipoCambio' => $this->obtenerTipoCambio('colombia'),
         ]);
     }
@@ -348,6 +352,7 @@ class ProduccionController extends Controller
             $row = (array) $row;
             $row['item'] = $i + 1;
             $row['promedio'] = $row['promedioCentro'] ?? 0;
+            $row['colorCentro'] = (int) ($row['colorCentro'] ?? 0);
 
             return (object) $row;
         }, $rawRows, array_keys($rawRows));
@@ -441,6 +446,7 @@ class ProduccionController extends Controller
                 'dias_con_datos'            => $diasConDatos,
                 'total_promedio_diario'     => $promDiario,
                 'promedioCentro'            => $promHistorico,
+                'colorCentro'               => (int) ($arr['colorCentro'] ?? 0),                
                 'horas_con_produccion'      => $horasActivas,
                 'horas_con_produccion_cero' => $horasCero,
                 'horas_sin_transmitir'      => $horasMuertas,

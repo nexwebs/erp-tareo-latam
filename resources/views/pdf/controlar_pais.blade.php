@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controlar {{ ucfirst($pais) }} — {{ $fecha }}</title>
+    <title>Controlar {{ ucfirst($pais) }} — Planet Game</title>
     <style>
         @php $esLandscape = in_array($pais, ['chile', 'colombia', 'australia']); @endphp
 
@@ -131,17 +131,27 @@
         $promMin = $promsValidos ? min($promsValidos) : 0;
         $promMax = $promsValidos ? max($promsValidos) : 0;
 
-        $bgProm = function(float $v) use ($promMin, $promMax): string {
-            if ($v <= 0 || $promMax <= $promMin) return '';
-            $pct = ($v - $promMin) / ($promMax - $promMin);
-            if ($pct < 0.5) {
-                $t = $pct * 2;
-                $r = 252; $g = (int)(165 + (211 - 165) * $t); $b = (int)(165 + (6 - 165) * $t);
-            } else {
-                $t = ($pct - 0.5) * 2;
-                $r = (int)(252 - (252 - 134) * $t); $g = (int)(211 + (239 - 211) * $t); $b = (int)(6 + (122 - 6) * $t);
+        // Handle outliers: if range is too large, use median-based range for better visualization
+        if ($promMin > 0 && $promMax / $promMin > 5 && count($promsValidos) > 5) {
+            $sortedVals = array_values($promsValidos);
+            sort($sortedVals);
+            $mid = count($sortedVals) / 2;
+            $median = $sortedVals[(int)$mid] ?? $promMin;
+            // Use median ± 50% for colored range instead of full range
+            $promMin = max(0, $median * 0.5);
+            $promMax = $median * 1.5;
+        }
+
+        $bgProm = function(float $v) use ($mediaPromDiario): string {
+            if ($v <= 0 || $mediaPromDiario <= 0) return '';
+            $pct = $v / $mediaPromDiario;
+            if ($pct > 0.25) {
+                return 'background-color: rgba(134, 239, 122, 0.5) !important; color: #1e293b !important; font-weight: 700;';
             }
-            return "background-color: rgba({$r},{$g},{$b},0.35) !important; color: #1e293b !important; font-weight: 700;";
+            if ($pct >= 0.20) {
+                return 'background-color: rgba(252, 211, 6, 0.45) !important; color: #1e293b !important; font-weight: 700;';
+            }
+            return 'background-color: rgba(252, 165, 165, 0.6) !important; color: #1e293b !important; font-weight: 700;';
         };
     @endphp
 
@@ -242,10 +252,10 @@
     </table>
 
     <div class="footer">
-        <span>Sistema de Producción LATAM</span>
+        <span>Planet Game</span>
         <span>{{ ucfirst($pais) }} · {{ $fecha }} · {{ count($datos) }} máquinas</span>
     </div>
 </div>
-<script>document.title = 'Controlar {{ ucfirst($pais) }} - {{ $fecha }}';</script>
+<script>document.title = 'Controlar {{ ucfirst($pais) }} - Planet Game';</script>
 </body>
 </html>

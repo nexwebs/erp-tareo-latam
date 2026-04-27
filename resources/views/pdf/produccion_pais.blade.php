@@ -11,7 +11,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Producción {{ ucfirst($pais) }} — {{ $fecha }}</title>
+    <title>Producción {{ ucfirst($pais) }} — Planet Game</title>
     <style>
         * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -181,10 +181,13 @@
 
         $totalesHora = [];
         $maxPorHora  = [];
+        $minNoCeroPorHora = [];
         foreach ($horasArr as $h) {
             $vals = array_map(fn($r) => (float)($r->{"h{$h}"} ?? 0), $datos);
             $totalesHora[$h] = array_sum($vals);
             $maxPorHora[$h]  = $vals ? max($vals) : 0;
+            $noCeros = array_filter($vals, fn($v) => $v > 0);
+            $minNoCeroPorHora[$h] = $noCeros ? min($noCeros) : 0;
         }
 
         $promedioGeneral = count($datos)
@@ -196,19 +199,47 @@
             fn($v) => $v > 0
         );
         $promMin = $promsValidos ? min($promsValidos) : 0;
-        $promMax = $promsValidos ? max($promsValidos) : 0;
 
-        $bgProm = function(float $v) use ($promMin, $promMax): string {
-            if ($v <= 0 || $promMax <= $promMin) return '';
-            $pct = ($v - $promMin) / ($promMax - $promMin);
-            if ($pct < 0.5) {
-                $t = $pct * 2;
-                $r = 252; $g = (int)(165 + (211 - 165) * $t); $b = (int)(165 + (6 - 165) * $t);
-            } else {
-                $t = ($pct - 0.5) * 2;
-                $r = (int)(252 - (252 - 134) * $t); $g = (int)(211 + (239 - 211) * $t); $b = (int)(6 + (122 - 6) * $t);
+        // Handle outliers: if range is too large, limit it for better visualization
+        $promMax = $promsValidos ? max($promsValidos) : 0;
+        if ($promMin > 0 && $promMax / $promMin > 5 && count($promsValidos) > 5) {
+            // Use median-based range when outliers detected (ratio > 5)
+            $sortedVals = array_values($promsValidos);
+            sort($sortedVals);
+            $mid = count($sortedVals) / 2;
+            $median = $sortedVals[(int)$mid] ?? $promMin;
+            // Use median ± 50% for colored range instead of full range
+            $promMin = max(0, $median * 0.5);
+            $promMax = $median * 1.5;
+        }
+
+        // Get absolute range for better intensity scaling
+        $allVals = [];
+        foreach ($datos as $r) {
+            foreach ($horasArr as $h) {
+                $v = (float)($r->{"h{$h}"} ?? 0);
+                if ($v > 0) $allVals[] = $v;
             }
-            return "background-color: rgba({$r},{$g},{$b},0.35) !important; color: #1e293b !important; font-weight: 700;";
+        }
+        $globalMin = $allVals ? min($allVals) : 0;
+        $globalMax = $allVals ? max($allVals) : 0;
+        $globalRange = $globalMax - $globalMin;
+
+        // Peru uses promedioCentro directly, always show 2 decimals
+        $esPeru = ($pais === 'peru');
+        // For Peru: always show 2 decimals. For others: show whole number if decimals are zero
+        $decimalesPeru = true;
+
+        $bgProm = function(float $v) use ($promedioGeneral): string {
+            if ($v <= 0 || $promedioGeneral <= 0) return '';
+            $pct = $v / $promedioGeneral;
+            if ($pct > 0.25) {
+                return 'background-color: rgba(134, 239, 122, 0.5) !important; color: #1e293b !important; font-weight: 700;';
+            }
+            if ($pct >= 0.20) {
+                return 'background-color: rgba(252, 211, 6, 0.45) !important; color: #1e293b !important; font-weight: 700;';
+            }
+            return 'background-color: rgba(252, 165, 165, 0.6) !important; color: #1e293b !important; font-weight: 700;';
         };
 
         $fmtVal = function(float $v, bool $soloDecimalesCero = false): string {
@@ -221,25 +252,40 @@
             return number_format($v, 2, '.', ',');
         };
 
-        $esPeru = ($pais === 'peru');
-
-        $fmtHora = function(float $v): string {
-            if ($v <= 0) return number_format(0, 2, '.', ',');
-            if ($v >= 1_000_000_000) return rtrim(rtrim(number_format($v/1_000_000_000, 2, '.', ''), '0'), '.') . 'MM';
-            if ($v >= 1_000_000)     return rtrim(rtrim(number_format($v/1_000_000,     2, '.', ''), '0'), '.') . 'M';
-            if ($v >= 1_000)         return rtrim(rtrim(number_format($v/1_000,         2, '.', ''), '0'), '.') . 'K';
+        $fmtVal = function(float $v) use ($decimalesPeru): string {
+            if ($v == 0) return number_format(0, 2, '.', ',');
+            // Peru always shows 2 decimals, others show whole number if zero decimals
+            if ($decimalesPeru) {
+                return number_format($v, 2, '.', ',');
+            }
             return fmod(round($v, 2), 1) == 0
                 ? number_format($v, 0, '.', ',')
                 : number_format($v, 2, '.', ',');
         };
 
-        $clsIntensidad = function(float $val, float $max, int $transmitio): string {
+        $fmtHora = function(float $v) use ($decimalesPeru): string {
+            if ($v <= 0) return number_format(0, 2, '.', ',');
+            if ($v >= 1_000_000_000) return rtrim(rtrim(number_format($v/1_000_000_000, 2, '.', ''), '0'), '.') . 'MM';
+            if ($v >= 1_000_000)     return rtrim(rtrim(number_format($v/1_000_000,     2, '.', ''), '0'), '.') . 'M';
+            if ($v >= 1_000)         return rtrim(rtrim(number_format($v/1_000,         2, '.', ''), '0'), '.') . 'K';
+            // Peru always shows 2 decimals in print
+            if ($decimalesPeru) {
+                return number_format($v, 2, '.', ',');
+            }
+            return fmod(round($v, 2), 1) == 0
+                ? number_format($v, 0, '.', ',')
+                : number_format($v, 2, '.', ',');
+        };
+
+        $clsIntensidad = function(float $val, float $max, float $minNoCero, int $transmitio, float $globalMin, float $globalMax, float $globalRange) use ($decimalesPeru): string {
             if ($val > 0) {
-                if ($max <= 0) return '';
-                $pct = $val / $max;
+                if ($globalRange <= 0) return '';
+                // Use absolute range for more granular scaling
+                $pct = ($val - $globalMin) / $globalRange;
                 if ($pct >= 0.8) return 'h-high';
                 if ($pct >= 0.5) return 'h-mid';
                 if ($pct >= 0.2) return 'h-low';
+                if ($pct > 0) return '';
                 return '';
             }
             if ($transmitio) return 'h-blue-bg';
@@ -259,11 +305,11 @@
         </div>
         <div class="kpi accent">
             <p class="kpi-label">Total</p>
-            <p class="kpi-value">{{ $fmtVal($totalGeneral, !$esPeru) }}</p>
+            <p class="kpi-value">{{ $fmtVal($totalGeneral) }}</p>
         </div>
         <div class="kpi amber">
             <p class="kpi-label">Prom/hora</p>
-            <p class="kpi-value">{{ $fmtVal($promedioGeneral, !$esPeru) }}</p>
+            <p class="kpi-value">{{ $fmtVal($promedioGeneral) }}</p>
         </div>
         <div class="kpi">
             <p class="kpi-label">Horas turno</p>
@@ -288,13 +334,8 @@
         <tbody>
             @foreach($datos as $i => $row)
                 @php
-                    $horasTrab = 0;
-                    $totalFila = 0;
-                    foreach ($horasArr as $h) {
-                        $v = (float)($row->{"h{$h}"} ?? 0);
-                        if ($v > 0) { $horasTrab++; $totalFila += $v; }
-                    }
-                    $promFila  = $horasTrab > 0 ? $totalFila / $horasTrab : 0;
+                    // Use row.promedio from stored procedure (same as Vue)
+                    $promFila = (float)($row->promedio ?? 0);
                     $totalCls  = $colorTotal($row->total ?? 0, $row->promedioCentro ?? 0);
                     $bgPromStr = $bgProm($promFila);
                 @endphp
@@ -307,12 +348,12 @@
                     @php
                         $val       = (float)($row->{"h{$h}"} ?? 0);
                         $transmitio = (int)($row->{"trans_h{$h}"} ?? 0);
-                        $cls       = $clsIntensidad($val, $maxPorHora[$h] ?? 0, $transmitio);
+                        $cls       = $clsIntensidad($val, $maxPorHora[$h] ?? 0, $minNoCeroPorHora[$h] ?? 0, $transmitio, $globalMin, $globalMax, $globalRange);
                     @endphp
                     <td class="c-hora right {{ $cls }}">{{ $fmtHora($val) }}</td>
                     @endforeach
-                    <td class="c-tot right total {{ $totalCls }}">{{ $fmtVal((float)($row->total ?? 0), !$esPeru) }}</td>
-                    <td class="c-prom right" style="{{ $bgPromStr }}">{{ $fmtVal($promFila, !$esPeru) }}</td>
+                    <td class="c-tot right total {{ $totalCls }}">{{ $fmtVal((float)($row->total ?? 0)) }}</td>
+                    <td class="c-prom right" style="{{ $bgPromStr }}">{{ $fmtVal($promFila) }}</td>
                 </tr>
             @endforeach
         </tbody>
@@ -322,17 +363,17 @@
                 @foreach($horasArr as $h)
                 <td class="c-hora right">{{ $fmtHora($totalesHora[$h]) }}</td>
                 @endforeach
-                <td class="c-tot right" style="color:#6ee7b7 !important">{{ $fmtVal($totalGeneral, !$esPeru) }}</td>
-                <td class="c-prom right" style="color:#fcd34d !important">{{ $fmtVal($promedioGeneral, !$esPeru) }}</td>
+                <td class="c-tot right" style="color:#6ee7b7 !important">{{ $fmtVal($totalGeneral) }}</td>
+                <td class="c-prom right" style="color:#fcd34d !important">{{ $fmtVal($promedioGeneral) }}</td>
             </tr>
         </tfoot>
     </table>
 
     <div class="footer">
-        <span>Sistema de Producción LATAM</span>
+        <span>Planet Game</span>
         <span>{{ ucfirst($pais) }} · {{ $fecha }} · {{ count($datos) }} registros</span>
     </div>
 </div>
-<script>document.title = 'Producción {{ ucfirst($pais) }} - {{ $fecha }}';</script>
+<script>document.title = 'Producción {{ ucfirst($pais) }} - Planet Game';</script>
 </body>
 </html>
