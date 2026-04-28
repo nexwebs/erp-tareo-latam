@@ -1,5 +1,5 @@
 @php
-    $esLandscape = in_array($pais, ['chile', 'colombia', 'australia']);
+    $esLandscape = true;
     $esPeru = ($pais === 'peru');
 
     $colorPais = match($pais) {
@@ -18,18 +18,18 @@
         * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; margin: 0; padding: 0; box-sizing: border-box; }
 
         @page {
-            size: A4 {{ $esLandscape ? 'landscape' : 'portrait' }};
-            margin: {{ $esLandscape ? '5mm 6mm' : '12mm' }};
+            size: A4 landscape;
+            margin: 6mm;
         }
 
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
-            font-size: {{ $esLandscape ? '6px' : '7px' }};
+            font-size: 8px;
             color: #1e293b;
             background: #fff;
         }
 
-        .page { padding: {{ $esLandscape ? '4mm 5mm' : '10mm 8mm' }}; }
+        .page { padding: 10mm; }
 
         .header {
             display: flex;
@@ -81,8 +81,8 @@
 
         thead tr { background: {{ $colorPais['thead'] }} !important; }
         thead th {
-            padding: {{ $esLandscape ? '2px 1px' : '3px 2px' }};
-            font-size: {{ $esLandscape ? '4px' : '5px' }};
+            padding: 3px 2px;
+            font-size: 5px;
             font-weight: 700; text-transform: uppercase;
             letter-spacing: 0.04em; color: #fff !important;
             text-align: center;
@@ -94,8 +94,8 @@
         tbody tr:nth-child(even) { background: #f8fafc !important; }
         tbody tr:nth-child(odd)  { background: #ffffff !important; }
         tbody td {
-            padding: {{ $esLandscape ? '1.5px 1px' : '2px' }};
-            font-size: {{ $esLandscape ? '5px' : '6px' }};
+            padding: 2.5px 2px;
+            font-size: 6px;
             color: #334155;
             border: 1px solid #e2e8f0;
             text-align: center;
@@ -138,17 +138,17 @@
         .h-intensity-max  { color: #22c55e !important; font-weight: 600; }
         .h-intensity-high { color: #16a34a !important; }
         .h-intensity-mid  { color: #15803d !important; }
-        .h-intensity-low  { color: {{ $esPeru ? '#475569' : '#64748b' }} !important; }
+        .h-intensity-low  { color: #64748b !important; }
 
         .h-zero-trans {
-            background-color: {{ $esPeru ? '#dbeafe' : '#eff6ff' }} !important;
-            color: #60a5fa !important;
-            {{ $esPeru ? 'font-weight: 600;' : '' }}
+            background-color: #fff1f2 !important;
+            color: #f87171 !important;
+            font-weight: 600;
         }
         .h-zero-red {
-            background-color: {{ $esPeru ? '#fee2e2' : '#fff1f2' }} !important;
-            color: {{ $esPeru ? '#ef4444' : '#f87171' }} !important;
-            {{ $esPeru ? 'font-weight: 600;' : '' }}
+            background-color: #fee2e2 !important;
+            color: #ef4444 !important;
+            font-weight: 600;
         }
 
         /* bgPromedio: espejo exacto de Vue — colorCentro 1/2/3 */
@@ -227,7 +227,7 @@
             $maxPorHora[$h]  = $vals ? max($vals) : 0;
         }
 
-        // Espejo de Vue: intensidad(valor, maxHora, transmitio)
+        // Intensidad: valor > 0 = verde según %, valor = 0 = rojo
         $clsIntensidad = function(float $val, float $maxHora, int $transmitio): string {
             if ($val > 0) {
                 $pct = $maxHora > 0 ? $val / $maxHora : 0;
@@ -236,7 +236,6 @@
                 if ($pct >= 0.2) return 'h-intensity-mid';
                 return 'h-intensity-low';
             }
-            if ($transmitio) return 'h-zero-trans';
             return 'h-zero-red';
         };
 

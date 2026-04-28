@@ -88,17 +88,16 @@ class ProduccionController extends Controller
         };
     }
 
+
     private function buildHoraSelects(int $inicio = self::HORA_INICIO, int $fin = self::HORA_FIN): array
     {
         $selects = [];
         foreach (range($inicio, $fin) as $h) {
-            $selects[] = $h === 8
-                ? "SUM(CASE WHEN HOUR(p.FechaProduccion) <= {$h} THEN p.ProduccionFinal ELSE 0 END) as h{$h}"
-                : "SUM(CASE WHEN HOUR(p.FechaProduccion) = {$h} THEN p.ProduccionFinal ELSE 0 END) as h{$h}";
+            $selects[] = "SUM(CASE WHEN HOUR(p.FechaProduccion) = {$h} THEN p.ProduccionFinal ELSE 0 END) as h{$h}";
         }
-
         return $selects;
     }
+
 
     private function calcularPromedio(object $row, int $inicio, int $fin): float
     {
@@ -404,61 +403,58 @@ class ProduccionController extends Controller
         $horasPorDia = 16;
         $horasMaxPorMaquina = $horasPorDia * $diasRango;
 
+     
         $datos = array_map(function ($row, $i) use ($horasMaxPorMaquina) {
             $arr = (array) $row;
 
-            $total = (float) ($arr['total'] ?? 0);
-            $diasConDatos = (int) ($arr['dias_con_datos'] ?? 1);
-            $promDiario = (float) ($arr['total_promedio_diario'] ?? 0);
-            $promHistorico = (float) ($arr['promedioCentro'] ?? 0);
-            $horasActivas = (int) ($arr['horas_con_produccion'] ?? 0);
-            $horasCero = (int) ($arr['horas_con_produccion_cero'] ?? 0);
-            $horasMuertas = (int) ($arr['horas_sin_transmitir'] ?? 0);
+            $total        = (float) ($arr['total'] ?? 0);
+            $diasConDatos = (int)   ($arr['dias_con_datos'] ?? 1);
+            $promDiario   = (float) ($arr['total_promedio_diario'] ?? 0);
+            $promHistorico= (float) ($arr['promedioCentro'] ?? 0);
+            $horasActivas = (int)   ($arr['horas_con_produccion'] ?? 0);
+            $horasCero    = (int)   ($arr['horas_con_produccion_cero'] ?? 0);
+            $horasMuertas = (int)   ($arr['horas_sin_transmitir'] ?? 0);
 
-            $horasTurno = $horasActivas + $horasCero + $horasMuertas;
-            $eficiencia = $horasTurno > 0
-                ? round(($horasActivas / $horasTurno) * 100, 1)
-                : 0;
-            $eficienciaCero = $horasTurno > 0
-                ? round((($horasActivas + $horasCero) / $horasTurno) * 100, 1)
-                : 0;
-
-            $vsHistorico = $promHistorico > 0
-                ? round((($promDiario - $promHistorico) / $promHistorico) * 100, 1)
-                : null;
-
-            $disponibilidad = round((($horasActivas + $horasCero) / $horasMaxPorMaquina) * 100, 1);
-
-            $rendimiento = $promHistorico > 0
+            $horasTurno      = $horasActivas + $horasCero + $horasMuertas;
+            $eficiencia      = $horasTurno > 0 ? round(($horasActivas / $horasTurno) * 100, 1) : 0;
+            $eficienciaCero  = $horasTurno > 0 ? round((($horasActivas + $horasCero) / $horasTurno) * 100, 1) : 0;
+            $disponibilidad  = round((($horasActivas + $horasCero) / $horasMaxPorMaquina) * 100, 1);
+            $rendimiento     = $promHistorico > 0
                 ? round(min($promDiario / $promHistorico, 1.0) * 100, 1)
                 : ($promDiario > 0 ? 100.0 : 0.0);
-
-            $eficienciaReal = round(($disponibilidad / 100) * ($rendimiento / 100) * 100, 1);
-
-            $vsHistorico = $promHistorico > 0
+            $eficienciaReal  = round(($disponibilidad / 100) * ($rendimiento / 100) * 100, 1);
+            $vsHistorico     = $promHistorico > 0
                 ? round((($promDiario - $promHistorico) / $promHistorico) * 100, 1)
                 : null;
 
-            return (object) [
-                'item' => $i + 1,
-                'IdMaquina' => $arr['IdMaquina'] ?? null,
-                'Modelo' => $arr['Modelo'] ?? '',
-                'NombreCentro' => $arr['NombreCentro'] ?? '',
-                'Serie' => $arr['Serie'] ?? '',
-                'total' => $total,
-                'dias_con_datos' => $diasConDatos,
-                'total_promedio_diario' => $promDiario,
-                'promedioCentro' => $promHistorico,
-                'colorCentro' => (int) ($arr['colorCentro'] ?? 0),
-                'horas_con_produccion' => $horasActivas,
+            // Extraer trans_hX dinámicamente
+            $transHoras = [];
+            for ($h = self::HORA_INICIO; $h <= self::HORA_FIN; $h++) {
+                $transHoras["trans_h{$h}"] = (int) ($arr["trans_h{$h}"] ?? 0);
+            }
+
+            return (object) array_merge([
+                'item'                    => $i + 1,
+                'IdMaquina'               => $arr['IdMaquina'] ?? null,
+                'Modelo'                  => $arr['Modelo'] ?? '',
+                'NombreCentro'            => $arr['NombreCentro'] ?? '',
+                'Serie'                   => $arr['Serie'] ?? '',
+                'total'                   => $total,
+                'dias_con_datos'          => $diasConDatos,
+                'total_promedio_diario'   => $promDiario,
+                'promedioCentro'          => $promHistorico,
+                'colorCentro'             => (int) ($arr['colorCentro'] ?? 0),
+                'horas_con_produccion'    => $horasActivas,
                 'horas_con_produccion_cero' => $horasCero,
-                'horas_sin_transmitir' => $horasMuertas,
-                'disponibilidad' => $disponibilidad,
-                'rendimiento' => $rendimiento,
-                'eficiencia_real' => $eficienciaReal,
-                'vs_historico' => $vsHistorico,
-            ];
+                'horas_sin_transmitir'    => $horasMuertas,
+                'disponibilidad'          => $disponibilidad,
+                'rendimiento'             => $rendimiento,
+                'eficiencia_real'         => $eficienciaReal,
+                'vs_historico'            => $vsHistorico,
+            ], $transHoras);
+
         }, $rawRows, array_keys($rawRows));
+
 
         $totalGeneral = array_sum(array_column(array_map(fn ($r) => (array) $r, $datos), 'total'));
         $horasActivasTotal = array_sum(array_column(array_map(fn ($r) => (array) $r, $datos), 'horas_con_produccion'));
@@ -683,6 +679,8 @@ class ProduccionController extends Controller
         };
 
         $rawRows = DB::select("CALL rpt_centro_produccion_{$metodo}(?)", [$fecha]);
+
+        usort($rawRows, fn ($a, $b) => strcmp($a->centro ?? '', $b->centro ?? ''));
 
         $datos = array_map(function ($row, $i) {
             $row = (array) $row;

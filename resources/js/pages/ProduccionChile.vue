@@ -63,17 +63,15 @@ const fmt = (v: any) => {
 
 const datosFiltrados = computed(() => {
     const q = busqueda.value.toLowerCase();
-
-    if (!q) {
-        return props.datos;
-    }
-
-    return props.datos.filter(
-        (r) =>
-            r.centro?.toLowerCase().includes(q) ||
-            r.modelo?.toLowerCase().includes(q) ||
-            r.serie?.toLowerCase().includes(q),
-    );
+    let datos = q
+        ? props.datos.filter(
+              (r) =>
+                  r.centro?.toLowerCase().includes(q) ||
+                  r.modelo?.toLowerCase().includes(q) ||
+                  r.serie?.toLowerCase().includes(q),
+          )
+        : [...props.datos];
+    return datos.sort((a, b) => (a.centro ?? '').localeCompare(b.centro ?? ''));
 });
 
 const totalGeneral = computed(() =>

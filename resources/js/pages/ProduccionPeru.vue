@@ -60,17 +60,15 @@ const fmt = (v: any) => {
 
 const datosFiltrados = computed(() => {
     const q = busqueda.value.toLowerCase();
-
-    if (!q) {
-        return props.datos;
-    }
-
-    return props.datos.filter(
-        (r) =>
-            r.centro?.toLowerCase().includes(q) ||
-            r.modelo?.toLowerCase().includes(q) ||
-            r.serie?.toLowerCase().includes(q),
-    );
+    let datos = q
+        ? props.datos.filter(
+              (r) =>
+                  r.centro?.toLowerCase().includes(q) ||
+                  r.modelo?.toLowerCase().includes(q) ||
+                  r.serie?.toLowerCase().includes(q),
+          )
+        : [...props.datos];
+    return datos.sort((a, b) => (a.centro ?? '').localeCompare(b.centro ?? ''));
 });
 
 const totalGeneral = computed(() =>
@@ -146,33 +144,16 @@ function bgPromedio(colorCentro: number): string {
     return 'background: transparent';
 }
 
-function intensidad(
-    valor: number,
-    maxHora: number,
-    transmitio: number,
-): string {
+function intensidad(valor: number, maxHora: number, transmitio: number): string {
     if (valor > 0) {
+        if (maxHora === 0) return 'text-slate-600';
         const pct = valor / maxHora;
-
-        if (pct >= 0.8) {
-            return 'text-green-500 font-semibold';
-        }
-
-        if (pct >= 0.5) {
-            return 'text-green-600';
-        }
-
-        if (pct >= 0.2) {
-            return 'text-green-700';
-        }
-
+        if (pct >= 0.8) return 'text-green-500 font-semibold';
+        if (pct >= 0.5) return 'text-green-600';
+        if (pct >= 0.2) return 'text-green-700';
         return 'text-slate-600';
     }
-
-    if (transmitio) {
-        return 'bg-blue-100 text-blue-400 font-semibold';
-    }
-
+    if (transmitio) return 'bg-blue-100 text-blue-400 font-semibold';
     return 'bg-red-100 text-red-500 font-semibold';
 }
 
@@ -180,10 +161,8 @@ function claseTotal(row: any): string {
     const total = parseFloat(row.total) || 0;
     const promedio = parseFloat(row.promedio) || 0;
 
-    if (total >= promedio) {
-        return 'bg-blue-100 text-blue-700 font-bold';
-    }
-
+    if (total === 0) return 'bg-red-100 text-red-600 font-bold';
+    if (promedio === 0 || total >= promedio) return 'bg-blue-100 text-blue-700 font-bold';
     return 'bg-red-100 text-red-600 font-bold';
 }
 </script>
