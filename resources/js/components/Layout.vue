@@ -30,7 +30,7 @@
                         <p
                             class="truncate text-[9px] font-medium tracking-widest text-emerald-600 uppercase"
                         >
-                            Tareo Latam
+                            Sistema de Consolidado
                         </p>
                     </div>
                 </div>
@@ -334,7 +334,7 @@ import NavItem from './NavItem.vue';
 import NavSubItem from './NavSubItem.vue';
 
 const page = usePage();
-const sidebarOpen = ref(true);
+const sidebarOpen = ref(false);
 const horaActual = ref('');
 let timer = null;
 
