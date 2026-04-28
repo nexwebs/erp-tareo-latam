@@ -22,7 +22,14 @@ C:\laragon\
 │       ├── storage\
 │       └── ...
 ```
-
+composer install
+php artisan key:generate
+-- php artisan migrate
+-- php artisan db:seed
+npm install
+npm run build
+npm run dev
+php artisan serve
 ---
 
 ## 2. Configurar PHP

@@ -3,6 +3,8 @@ import { router, Head } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import Layout from '../components/Layout.vue';
 
+const layoutRef = ref<InstanceType<typeof Layout>>();
+
 const props = defineProps<{
     datos: any[];
     centros: any[];
@@ -345,7 +347,6 @@ const stickyLeft = {
                             ></span>
                             <span class="whitespace-nowrap">Bajo (mín)</span>
                         </span>
-                      
                     </div>
                 </div>
 
@@ -502,7 +503,6 @@ const stickyLeft = {
                                 >
                                     {{ fmt(row.total) }}
                                 </td>
-
 
                                 <td
                                     class="rounded-sm px-3 py-2 text-right text-xs font-semibold whitespace-nowrap text-slate-700 tabular-nums transition-colors"

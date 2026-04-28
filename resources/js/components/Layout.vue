@@ -319,7 +319,7 @@
             </header>
 
             <!-- Main body -->
-            <main class="flex-1 overflow-y-auto p-4 sm:p-5">
+            <main class="flex-1 overflow-x-auto overflow-y-auto p-4 sm:p-5">
                 <slot />
             </main>
         </div>
@@ -388,52 +388,52 @@ const originBreadcrumb = computed(() => {
     const path = typeof window !== 'undefined' ? window.location.pathname : '';
 
     if (path === '/dashboard') {
-return 'Dashboard Principal';
-}
+        return 'Dashboard Principal';
+    }
 
     if (path.startsWith('/produccion/peru')) {
-return 'Producción > Perú';
-}
+        return 'Producción > Perú';
+    }
 
     if (path.startsWith('/produccion/chile')) {
-return 'Producción > Chile';
-}
+        return 'Producción > Chile';
+    }
 
     if (path.startsWith('/produccion/colombia')) {
-return 'Producción > Colombia';
-}
+        return 'Producción > Colombia';
+    }
 
     if (path.startsWith('/produccion/australia')) {
-return 'Producción > Australia';
-}
+        return 'Producción > Australia';
+    }
 
     if (path.startsWith('/produccion/eficiencia')) {
-return 'Producción > Eficiencia';
-}
+        return 'Producción > Eficiencia';
+    }
 
     if (path.startsWith('/consultas/datos')) {
-return 'Consultas > Datos';
-}
+        return 'Consultas > Datos';
+    }
 
     if (path.startsWith('/consultas/maquinas')) {
-return 'Consultas > Máquinas';
-}
+        return 'Consultas > Máquinas';
+    }
 
     if (path.startsWith('/reportes/diario')) {
-return 'Reportes > Diario';
-}
+        return 'Reportes > Diario';
+    }
 
     if (path.startsWith('/reportes/historico')) {
-return 'Reportes > Histórico';
-}
+        return 'Reportes > Histórico';
+    }
 
     if (path.startsWith('/reportes/centros')) {
-return 'Reportes > Centros';
-}
+        return 'Reportes > Centros';
+    }
 
     if (path.startsWith('/reportes/comparativo')) {
-return 'Reportes > Comparativo';
-}
+        return 'Reportes > Comparativo';
+    }
 
     return 'Dashboard';
 });
@@ -457,8 +457,8 @@ onMounted(() => {
 
 onUnmounted(() => {
     if (timer) {
-clearInterval(timer);
-}
+        clearInterval(timer);
+    }
 });
 
 const logout = () => {
@@ -472,4 +472,6 @@ const logout = () => {
         window.location.href = '/login';
     });
 };
+
+defineExpose({ sidebarOpen });
 </script>

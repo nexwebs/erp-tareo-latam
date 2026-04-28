@@ -22,17 +22,17 @@ const submit = () => form.post('/login');
                     </svg>
                 </div>
 
-                <h2 class="text-3xl font-bold text-slate-100 tracking-tight mb-1">Sistema de Tareo</h2>
+                <h2 class="text-3xl font-bold text-slate-100 tracking-tight mb-1">Sistema de Consolidado</h2>
                 <p class="text-slate-400 text-sm mb-10">Planet Sistcontrol Latam</p>
 
-                <div class="flex flex-col gap-4">
+                <!-- <div class="flex flex-col gap-4">
                     <div v-for="feat in ['Control de asistencia en tiempo real', 'Reportes y exportación avanzada']"
                         :key="feat"
                         class="flex items-center gap-3 text-slate-300 text-sm">
                         <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.7)] flex-shrink-0"></span>
                         {{ feat }}
                     </div>
-                </div>
+                </div> -->
             </div>
         </div>
 

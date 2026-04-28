@@ -257,7 +257,6 @@ class ProduccionController extends Controller
         return $result;
     }
 
-
     public function peru(Request $request)
     {
         $fecha = $request->get('fecha', now()->toDateString());
@@ -276,11 +275,11 @@ class ProduccionController extends Controller
         $centros = $this->centrosQuery('peru')->orderBy('NombreCentro')->get();
 
         return inertia('ProduccionPeru', [
-            'datos'      => $datos,
-            'centros'    => $centros,
-            'filtros'    => ['fecha' => $fecha],
+            'datos' => $datos,
+            'centros' => $centros,
+            'filtros' => ['fecha' => $fecha],
             'horaInicio' => self::HORA_INICIO,
-            'horaFin'    => self::HORA_FIN,
+            'horaFin' => self::HORA_FIN,
             'tipoCambio' => 1,
         ]);
     }
@@ -306,11 +305,11 @@ class ProduccionController extends Controller
             ->get();
 
         return inertia('ProduccionChile', [
-            'datos'      => $datos,
-            'centros'    => $centros,
-            'filtros'    => ['fecha' => $fecha],
+            'datos' => $datos,
+            'centros' => $centros,
+            'filtros' => ['fecha' => $fecha],
             'horaInicio' => self::HORA_INICIO,
-            'horaFin'    => self::HORA_FIN,
+            'horaFin' => self::HORA_FIN,
             'tipoCambio' => $this->obtenerTipoCambio('chile'),
         ]);
     }
@@ -333,11 +332,11 @@ class ProduccionController extends Controller
         $centros = $this->centrosQuery('colombia')->orderBy('NombreCentro')->get();
 
         return inertia('ProduccionColombia', [
-            'datos'      => $datos,
-            'centros'    => $centros,
-            'filtros'    => ['fecha' => $fecha],
+            'datos' => $datos,
+            'centros' => $centros,
+            'filtros' => ['fecha' => $fecha],
             'horaInicio' => self::HORA_INICIO,
-            'horaFin'    => self::HORA_FIN,
+            'horaFin' => self::HORA_FIN,
             'tipoCambio' => $this->obtenerTipoCambio('colombia'),
         ]);
     }
@@ -401,7 +400,11 @@ class ProduccionController extends Controller
 
         $rawRows = DB::select('CALL rpt_tareo_centros_latam(?, ?, ?)', [$fecha, $fechaFin, $pais]);
 
-        $datos = array_map(function ($row, $i) {
+        $diasRango = max(1, (strtotime($fechaFin) - strtotime($fecha)) / 86400 + 1);
+        $horasPorDia = 16;
+        $horasMaxPorMaquina = $horasPorDia * $diasRango;
+
+        $datos = array_map(function ($row, $i) use ($horasMaxPorMaquina) {
             $arr = (array) $row;
 
             $total = (float) ($arr['total'] ?? 0);
@@ -424,7 +427,7 @@ class ProduccionController extends Controller
                 ? round((($promDiario - $promHistorico) / $promHistorico) * 100, 1)
                 : null;
 
-            $disponibilidad = round((($horasActivas + $horasCero) / 16) * 100, 1);
+            $disponibilidad = round((($horasActivas + $horasCero) / $horasMaxPorMaquina) * 100, 1);
 
             $rendimiento = $promHistorico > 0
                 ? round(min($promDiario / $promHistorico, 1.0) * 100, 1)
@@ -437,23 +440,23 @@ class ProduccionController extends Controller
                 : null;
 
             return (object) [
-                'item'                      => $i + 1,
-                'IdMaquina'                 => $arr['IdMaquina'] ?? null,
-                'Modelo'                    => $arr['Modelo'] ?? '',
-                'NombreCentro'              => $arr['NombreCentro'] ?? '',
-                'Serie'                     => $arr['Serie'] ?? '',
-                'total'                     => $total,
-                'dias_con_datos'            => $diasConDatos,
-                'total_promedio_diario'     => $promDiario,
-                'promedioCentro'            => $promHistorico,
-                'colorCentro'               => (int) ($arr['colorCentro'] ?? 0),                
-                'horas_con_produccion'      => $horasActivas,
+                'item' => $i + 1,
+                'IdMaquina' => $arr['IdMaquina'] ?? null,
+                'Modelo' => $arr['Modelo'] ?? '',
+                'NombreCentro' => $arr['NombreCentro'] ?? '',
+                'Serie' => $arr['Serie'] ?? '',
+                'total' => $total,
+                'dias_con_datos' => $diasConDatos,
+                'total_promedio_diario' => $promDiario,
+                'promedioCentro' => $promHistorico,
+                'colorCentro' => (int) ($arr['colorCentro'] ?? 0),
+                'horas_con_produccion' => $horasActivas,
                 'horas_con_produccion_cero' => $horasCero,
-                'horas_sin_transmitir'      => $horasMuertas,
-                'disponibilidad'            => $disponibilidad,
-                'rendimiento'               => $rendimiento,
-                'eficiencia_real'           => $eficienciaReal,
-                'vs_historico'              => $vsHistorico,
+                'horas_sin_transmitir' => $horasMuertas,
+                'disponibilidad' => $disponibilidad,
+                'rendimiento' => $rendimiento,
+                'eficiencia_real' => $eficienciaReal,
+                'vs_historico' => $vsHistorico,
             ];
         }, $rawRows, array_keys($rawRows));
 
@@ -463,15 +466,14 @@ class ProduccionController extends Controller
         $horasMuertasTotal = array_sum(array_column(array_map(fn ($r) => (array) $r, $datos), 'horas_sin_transmitir'));
         $horasTurnoTotal = $horasActivasTotal + $horasCeroTotal + $horasMuertasTotal;
 
-
         $totales = [
-            'total_general'         => $totalGeneral,
-            'conteo_general'        => count($datos),
-            'horas_activas_total'   => $horasActivasTotal,
-            'horas_cero_total'      => $horasCeroTotal,
-            'horas_muertas_total'   => $horasMuertasTotal,
+            'total_general' => $totalGeneral,
+            'conteo_general' => count($datos),
+            'horas_activas_total' => $horasActivasTotal,
+            'horas_cero_total' => $horasCeroTotal,
+            'horas_muertas_total' => $horasMuertasTotal,
             'disponibilidad_global' => count($datos) > 0
-                ? round((($horasActivasTotal + $horasCeroTotal) / (count($datos) * 16)) * 100, 1)
+                ? round((($horasActivasTotal + $horasCeroTotal) / (count($datos) * $horasMaxPorMaquina)) * 100, 1)
                 : 0,
         ];
 

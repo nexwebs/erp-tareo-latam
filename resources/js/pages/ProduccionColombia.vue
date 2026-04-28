@@ -3,6 +3,8 @@ import { router, Head } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import Layout from '../components/Layout.vue';
 
+const layoutRef = ref<InstanceType<typeof Layout>>();
+
 const props = defineProps<{
     datos: any[];
     centros: any[];
@@ -147,6 +149,14 @@ const promedioMax = computed(() => {
     return max;
 });
 
+const escalaTabla = computed(() => {
+    const navAbierto = layoutRef.value?.sidebarOpen;
+    if (navAbierto) {
+        return 'transform: scale(0.92); transform-origin: top center; margin: 0 auto;';
+    }
+    return '';
+});
+
 function bgPromedio(colorCentro: number): string {
     if (colorCentro === 1) return 'background: rgba(134, 239, 122, 0.5)';
     if (colorCentro === 2) return 'background: rgba(252, 211, 6, 0.45)';
@@ -207,7 +217,7 @@ const stickyLeft = {
 
 <template>
     <Head title="Producción Colombia" />
-    <Layout>
+    <Layout ref="layoutRef">
         <div class="min-h-screen bg-slate-50 font-sans text-slate-700">
             <div class="w-full px-2 py-4 sm:px-4 sm:py-6">
                 <header
@@ -346,204 +356,207 @@ const stickyLeft = {
                             ></span>
                             <span class="whitespace-nowrap">Bajo (mín)</span>
                         </span>
-                      
                     </div>
                 </div>
 
                 <div
                     class="w-full overflow-x-auto rounded-2xl border border-slate-200 bg-white pb-2 shadow-sm"
                 >
-                    <table
-                        class="w-full border-collapse text-sm"
-                        style="table-layout: auto"
-                    >
-                        <colgroup>
-                            <col
-                                :style="{
-                                    width: COL_W.num + 'px',
-                                    minWidth: COL_W.num + 'px',
-                                }"
-                            />
-                            <col
-                                :style="{
-                                    width: COL_W.modelo + 'px',
-                                    minWidth: COL_W.modelo + 'px',
-                                }"
-                            />
-                            <col
-                                :style="{
-                                    width: COL_W.centro + 'px',
-                                    minWidth: COL_W.centro + 'px',
-                                }"
-                            />
-                            <col
-                                :style="{
-                                    width: COL_W.serie + 'px',
-                                    minWidth: COL_W.serie + 'px',
-                                }"
-                            />
-                        </colgroup>
-                        <thead>
-                            <tr class="border-b border-slate-200 bg-white">
-                                <th
-                                    class="z-20 bg-white px-2 py-3 text-center text-[10px] font-bold tracking-widest whitespace-nowrap text-slate-500 uppercase"
+                    <div class="w-full min-w-0" :style="escalaTabla">
+                        <table
+                            class="w-full border-collapse text-sm"
+                            style="table-layout: auto"
+                        >
+                            <colgroup>
+                                <col
                                     :style="{
-                                        position: 'sticky',
-                                        left: stickyLeft.num + 'px',
+                                        width: COL_W.num + 'px',
+                                        minWidth: COL_W.num + 'px',
                                     }"
-                                >
-                                    #
-                                </th>
-                                <th
-                                    class="z-20 bg-white px-3 py-3 text-left text-[10px] font-bold tracking-widest whitespace-nowrap text-slate-500 uppercase"
+                                />
+                                <col
                                     :style="{
-                                        position: 'sticky',
-                                        left: stickyLeft.modelo + 'px',
+                                        width: COL_W.modelo + 'px',
+                                        minWidth: COL_W.modelo + 'px',
                                     }"
-                                >
-                                    Modelo
-                                </th>
-                                <th
-                                    class="z-20 bg-white px-3 py-3 text-left text-[10px] font-bold tracking-widest whitespace-nowrap text-slate-500 uppercase"
+                                />
+                                <col
                                     :style="{
-                                        position: 'sticky',
-                                        left: stickyLeft.centro + 'px',
+                                        width: COL_W.centro + 'px',
+                                        minWidth: COL_W.centro + 'px',
                                     }"
-                                >
-                                    Centro
-                                </th>
-                                <th
-                                    class="z-20 border-r border-slate-200 bg-white px-3 py-3 text-center text-[10px] font-bold tracking-widest whitespace-nowrap text-slate-500 uppercase"
+                                />
+                                <col
                                     :style="{
-                                        position: 'sticky',
-                                        left: stickyLeft.serie + 'px',
+                                        width: COL_W.serie + 'px',
+                                        minWidth: COL_W.serie + 'px',
                                     }"
-                                >
-                                    Serie
-                                </th>
-                                <th
-                                    v-for="h in horas"
-                                    :key="h"
-                                    class="px-2 py-3 text-center text-[10px] font-bold tracking-widest whitespace-nowrap text-slate-500 uppercase"
-                                >
-                                    {{ h }}h
-                                </th>
-                                <th
-                                    class="bg-rose-50 px-3 py-3 text-center text-[10px] font-bold tracking-widest whitespace-nowrap text-rose-600 uppercase"
-                                >
-                                    Total
-                                </th>
-                                <th
-                                    class="bg-amber-50 px-3 py-3 text-center text-[10px] font-bold tracking-widest whitespace-nowrap text-amber-600 uppercase"
-                                >
-                                    Prom/h
-                                </th>
-                            </tr>
-                        </thead>
+                                />
+                            </colgroup>
+                            <thead>
+                                <tr class="border-b border-slate-200 bg-white">
+                                    <th
+                                        class="z-20 bg-white px-2 py-3 text-center text-[10px] font-bold tracking-widest whitespace-nowrap text-slate-500 uppercase"
+                                        :style="{
+                                            position: 'sticky',
+                                            left: stickyLeft.num + 'px',
+                                        }"
+                                    >
+                                        #
+                                    </th>
+                                    <th
+                                        class="z-20 bg-white px-3 py-3 text-left text-[10px] font-bold tracking-widest whitespace-nowrap text-slate-500 uppercase"
+                                        :style="{
+                                            position: 'sticky',
+                                            left: stickyLeft.modelo + 'px',
+                                        }"
+                                    >
+                                        Modelo
+                                    </th>
+                                    <th
+                                        class="z-20 bg-white px-3 py-3 text-left text-[10px] font-bold tracking-widest whitespace-nowrap text-slate-500 uppercase"
+                                        :style="{
+                                            position: 'sticky',
+                                            left: stickyLeft.centro + 'px',
+                                        }"
+                                    >
+                                        Centro
+                                    </th>
+                                    <th
+                                        class="z-20 border-r border-slate-200 bg-white px-3 py-3 text-center text-[10px] font-bold tracking-widest whitespace-nowrap text-slate-500 uppercase"
+                                        :style="{
+                                            position: 'sticky',
+                                            left: stickyLeft.serie + 'px',
+                                        }"
+                                    >
+                                        Serie
+                                    </th>
+                                    <th
+                                        v-for="h in horas"
+                                        :key="h"
+                                        class="px-2 py-3 text-center text-[10px] font-bold tracking-widest whitespace-nowrap text-slate-500 uppercase"
+                                    >
+                                        {{ h }}h
+                                    </th>
+                                    <th
+                                        class="bg-rose-50 px-3 py-3 text-center text-[10px] font-bold tracking-widest whitespace-nowrap text-rose-600 uppercase"
+                                    >
+                                        Total
+                                    </th>
+                                    <th
+                                        class="bg-amber-50 px-3 py-3 text-center text-[10px] font-bold tracking-widest whitespace-nowrap text-amber-600 uppercase"
+                                    >
+                                        Prom/h
+                                    </th>
+                                </tr>
+                            </thead>
 
-                        <tbody>
-                            <tr
-                                v-for="row in datosFiltrados"
-                                :key="row.item"
-                                class="border-b border-slate-100 hover:bg-slate-50"
-                            >
-                                <td
-                                    class="z-10 bg-white px-2 py-2 text-center text-xs whitespace-nowrap text-slate-500"
-                                    :style="{
-                                        position: 'sticky',
-                                        left: stickyLeft.num + 'px',
-                                    }"
+                            <tbody>
+                                <tr
+                                    v-for="row in datosFiltrados"
+                                    :key="row.item"
+                                    class="border-b border-slate-100 hover:bg-slate-50"
                                 >
-                                    {{ row.item }}
-                                </td>
-                                <td
-                                    class="z-10 bg-white px-3 py-2 text-xs whitespace-nowrap text-slate-600"
-                                    :style="{
-                                        position: 'sticky',
-                                        left: stickyLeft.modelo + 'px',
-                                    }"
-                                >
-                                    {{ row.modelo }}
-                                </td>
-                                <td
-                                    class="z-10 bg-white px-3 py-2 text-xs whitespace-nowrap text-slate-600"
-                                    :style="{
-                                        position: 'sticky',
-                                        left: stickyLeft.centro + 'px',
-                                    }"
-                                >
-                                    {{ row.centro }}
-                                </td>
-                                <td
-                                    class="z-10 border-r border-slate-200 bg-white px-3 py-2 text-center font-mono text-xs whitespace-nowrap text-rose-400"
-                                    :style="{
-                                        position: 'sticky',
-                                        left: stickyLeft.serie + 'px',
-                                    }"
-                                >
-                                    {{ row.serie }}
-                                </td>
-                                <td
-                                    v-for="h in horas"
-                                    :key="h"
-                                    class="px-2 py-2 text-center text-xs whitespace-nowrap tabular-nums transition-colors"
-                                    :class="
-                                        intensidad(
-                                            parseFloat(row[`h${h}`]) || 0,
-                                            maxPorHora[h],
-                                            row[`trans_h${h}`] ?? 0,
-                                        )
-                                    "
-                                >
-                                    {{ fmt(row[`h${h}`]) }}
-                                </td>
-                                <td
-                                    class="px-3 py-2 text-right text-xs whitespace-nowrap tabular-nums"
-                                    :class="claseTotal(row)"
-                                >
-                                    {{ fmt(row.total) }}
-                                </td>
-                                <td
-                                    class="rounded-sm px-3 py-2 text-right text-xs font-semibold whitespace-nowrap text-slate-700 tabular-nums transition-colors"
-                                    :style="bgPromedio(row.colorCentro)"
-                                >
-                                    {{ fmt(row.promedio) }}
-                                </td>
-                            </tr>
-                        </tbody>
+                                    <td
+                                        class="z-10 bg-white px-2 py-2 text-center text-xs whitespace-nowrap text-slate-500"
+                                        :style="{
+                                            position: 'sticky',
+                                            left: stickyLeft.num + 'px',
+                                        }"
+                                    >
+                                        {{ row.item }}
+                                    </td>
+                                    <td
+                                        class="z-10 bg-white px-3 py-2 text-xs whitespace-nowrap text-slate-600"
+                                        :style="{
+                                            position: 'sticky',
+                                            left: stickyLeft.modelo + 'px',
+                                        }"
+                                    >
+                                        {{ row.modelo }}
+                                    </td>
+                                    <td
+                                        class="z-10 bg-white px-3 py-2 text-xs whitespace-nowrap text-slate-600"
+                                        :style="{
+                                            position: 'sticky',
+                                            left: stickyLeft.centro + 'px',
+                                        }"
+                                    >
+                                        {{ row.centro }}
+                                    </td>
+                                    <td
+                                        class="z-10 border-r border-slate-200 bg-white px-3 py-2 text-center font-mono text-xs whitespace-nowrap text-rose-400"
+                                        :style="{
+                                            position: 'sticky',
+                                            left: stickyLeft.serie + 'px',
+                                        }"
+                                    >
+                                        {{ row.serie }}
+                                    </td>
+                                    <td
+                                        v-for="h in horas"
+                                        :key="h"
+                                        class="px-2 py-2 text-center text-xs whitespace-nowrap tabular-nums transition-colors"
+                                        :class="
+                                            intensidad(
+                                                parseFloat(row[`h${h}`]) || 0,
+                                                maxPorHora[h],
+                                                row[`trans_h${h}`] ?? 0,
+                                            )
+                                        "
+                                    >
+                                        {{ fmt(row[`h${h}`]) }}
+                                    </td>
+                                    <td
+                                        class="px-3 py-2 text-right text-xs whitespace-nowrap tabular-nums"
+                                        :class="claseTotal(row)"
+                                    >
+                                        {{ fmt(row.total) }}
+                                    </td>
+                                    <td
+                                        class="rounded-sm px-3 py-2 text-right text-xs font-semibold whitespace-nowrap text-slate-700 tabular-nums transition-colors"
+                                        :style="bgPromedio(row.colorCentro)"
+                                    >
+                                        {{ fmt(row.promedio) }}
+                                    </td>
+                                </tr>
+                            </tbody>
 
-                        <tfoot>
-                            <tr class="border-t-2 border-slate-200 bg-slate-50">
-                                <td
-                                    colspan="4"
-                                    class="z-10 border-r border-slate-200 bg-slate-50 px-3 py-3 text-right text-xs font-black tracking-widest whitespace-nowrap text-slate-600 uppercase"
-                                    :style="{
-                                        position: 'sticky',
-                                        left: stickyLeft.num + 'px',
-                                    }"
+                            <tfoot>
+                                <tr
+                                    class="border-t-2 border-slate-200 bg-slate-50"
                                 >
-                                    Total
-                                </td>
-                                <td
-                                    v-for="h in horas"
-                                    :key="h"
-                                    class="border-r border-slate-100 px-2 py-3 text-center text-xs font-semibold whitespace-nowrap text-rose-500 tabular-nums"
-                                >
-                                    {{ fmt(totalesHora[h]) }}
-                                </td>
-                                <td
-                                    class="bg-rose-50 px-3 py-3 text-right text-sm font-black whitespace-nowrap text-rose-600 tabular-nums"
-                                >
-                                    {{ fmt(totalGeneral) }}
-                                </td>
-                                <td
-                                    class="bg-amber-50 px-3 py-3 text-right text-sm font-black whitespace-nowrap text-amber-500 tabular-nums"
-                                >
-                                    {{ fmt(promedioGeneral) }}
-                                </td>
-                            </tr>
-                        </tfoot>
-                    </table>
+                                    <td
+                                        colspan="4"
+                                        class="z-10 border-r border-slate-200 bg-slate-50 px-3 py-3 text-right text-xs font-black tracking-widest whitespace-nowrap text-slate-600 uppercase"
+                                        :style="{
+                                            position: 'sticky',
+                                            left: stickyLeft.num + 'px',
+                                        }"
+                                    >
+                                        Total
+                                    </td>
+                                    <td
+                                        v-for="h in horas"
+                                        :key="h"
+                                        class="border-r border-slate-100 px-2 py-3 text-center text-xs font-semibold whitespace-nowrap text-rose-500 tabular-nums"
+                                    >
+                                        {{ fmt(totalesHora[h]) }}
+                                    </td>
+                                    <td
+                                        class="bg-rose-50 px-3 py-3 text-right text-sm font-black whitespace-nowrap text-rose-600 tabular-nums"
+                                    >
+                                        {{ fmt(totalGeneral) }}
+                                    </td>
+                                    <td
+                                        class="bg-amber-50 px-3 py-3 text-right text-sm font-black whitespace-nowrap text-amber-500 tabular-nums"
+                                    >
+                                        {{ fmt(promedioGeneral) }}
+                                    </td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
 
                     <p
                         v-if="!datosFiltrados.length"
