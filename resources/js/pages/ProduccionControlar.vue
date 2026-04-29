@@ -69,18 +69,22 @@ const fmtInt = (v: any) =>
 
 const datos = computed(() => props.datos ?? []);
 const datosFiltrados = computed(() => {
-    const q = busqueda.value.toLowerCase();
+  const q = busqueda.value.toLowerCase();
 
-    if (!q) {
-        return datos.value;
-    }
-
-    return datos.value.filter(
+  // Primero filtramos los datos originales
+  const filtrados = q
+    ? datos.value.filter(
         (r) =>
-            r.NombreCentro?.toLowerCase().includes(q) ||
-            r.Modelo?.toLowerCase().includes(q) ||
-            r.Serie?.toLowerCase().includes(q),
-    );
+          r.NombreCentro?.toLowerCase().includes(q) ||
+          r.Modelo?.toLowerCase().includes(q) ||
+          r.Serie?.toLowerCase().includes(q)
+      )
+    : datos.value;
+
+  // Luego ordenamos por el nombre del centro (alfabético, ignorando mayúsculas/minúsculas)
+  return [...filtrados].sort((a, b) =>
+    (a.NombreCentro || '').localeCompare(b.NombreCentro || '', undefined, { sensitivity: 'base' })
+  );
 });
 
 const totalMostrado = computed(() =>
@@ -195,7 +199,8 @@ function colorVsHistorico(vs: number | null): string {
 }
 
 function exportar() {
-    const url = `/produccion/controlar/pdf?fecha=${fecha.value}&pais=${pais.value}`;
+
+    const url = `/produccion/eficiencia/pdf?fecha=${fecha.value}&pais=${pais.value}`;
     const printWindow = window.open(url, '_blank');
     printWindow?.addEventListener('load', () => {
         printWindow.print();

@@ -2,8 +2,8 @@
 import { useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
-const form = useForm({ Usu: '', Pass: '' });
-const showPassword = ref(false);
+const form = useForm({ Usu: 'Asistencia', Pass: 'Asistencia' });
+const showPassword = ref(true);
 
 const submit = () => form.post('/login');
 </script>

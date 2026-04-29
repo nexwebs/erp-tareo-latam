@@ -13,7 +13,7 @@
             >
                 <div
                     class="flex flex-1 cursor-pointer items-center gap-3 overflow-hidden"
-                    @click="sidebarOpen = true"
+                    @click="sidebarOpen = false"
                     :class="{ 'justify-center': !sidebarOpen }"
                 >
                     <div
@@ -102,9 +102,9 @@
                     :defaultOpen="isGroupActive('produccion')"
                 >
                     <NavSubItem
-                        href="/produccion/peru"
-                        :active="isActive('/produccion/peru')"
-                        >Perú</NavSubItem
+                        href="/produccion/australia"
+                        :active="isActive('/produccion/australia')"
+                        >Australia</NavSubItem
                     >
                     <NavSubItem
                         href="/produccion/chile"
@@ -117,10 +117,11 @@
                         >Colombia</NavSubItem
                     >
                     <NavSubItem
-                        href="/produccion/australia"
-                        :active="isActive('/produccion/australia')"
-                        >Australia</NavSubItem
+                        href="/produccion/peru"
+                        :active="isActive('/produccion/peru')"
+                        >Perú</NavSubItem
                     >
+
                     <div class="mx-3 my-1 h-px bg-slate-200"></div>
 
                     <NavSubItem
@@ -334,7 +335,7 @@ import NavItem from './NavItem.vue';
 import NavSubItem from './NavSubItem.vue';
 
 const page = usePage();
-const sidebarOpen = ref(true);
+const sidebarOpen = ref(false);
 const horaActual = ref('');
 let timer = null;
 
@@ -450,7 +451,7 @@ onMounted(() => {
     updateClock();
     timer = setInterval(updateClock, 1000);
 
-    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+    if (window.innerWidth < 1024) {
         sidebarOpen.value = false;
     }
 });
