@@ -141,14 +141,33 @@
                     @expand="expandSidebar"
                 >
                     <NavSubItem
-                        href="/maquinas/listado"
-                        :active="isActive('/maquinas/listado')"
-                        >Activas</NavSubItem
+                        href="/maquinas/visibles"
+                        :active="isActive('/maquinas/visibles')"
+                        >Visibles</NavSubItem
                     >
                     <NavSubItem
-                        href="/maquinas/inactivas"
-                        :active="isActive('/maquinas/inactivas')"
-                        >Inactivas</NavSubItem
+                        href="/maquinas/no-visibles"
+                        :active="isActive('/maquinas/no-visibles')"
+                        >No visibles</NavSubItem
+                    >
+                    <NavSubItem
+                        href="/maquinas/baja-fisica"
+                        :active="isActive('/maquinas/baja-fisica')"
+                        >Baja física</NavSubItem
+                    >
+                </NavGroup>
+
+                <NavGroup
+                    icon="clipboard"
+                    label="Mantenimiento"
+                    :collapsed="!sidebarOpen"
+                    :defaultOpen="isGroupActive('mantenimiento')"
+                    @expand="expandSidebar"
+                >
+                    <NavSubItem
+                        href="/centros/gestion"
+                        :active="isActive('/centros/gestion')"
+                        >Centros</NavSubItem
                     >
                 </NavGroup>
 
@@ -349,8 +368,9 @@ function getInitialSidebarState() {
             '/produccion/hora',
             '/produccion/eficiencia',
             '/produccion/controlar',
-            '/maquinas/listado',
-            '/maquinas/inactivas',
+            '/maquinas/visibles',
+            '/maquinas/no-visibles',
+            '/maquinas/baja-fisica',
         ];
         return expandsOnRoutes.some((route) => path.startsWith(route));
     }

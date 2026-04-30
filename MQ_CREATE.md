@@ -9,64 +9,23 @@ La producción sale del centro asignado. La tabla donde cae depende del `country
 Aquí los SP finales listos para ejecutar:
 
 ```sql
-DROP PROCEDURE IF EXISTS `usp_crear_maquina_inactiva`;
+DROP PROCEDURE IF EXISTS `usp_crear_maquina_visible`;
 DELIMITER ;;
-CREATE PROCEDURE `usp_crear_maquina_inactiva`(
-    IN _serie  VARCHAR(30),
-    IN _modelo VARCHAR(50)
+CREATE PROCEDURE `usp_crear_maquina_visible`(
+    IN _serie      VARCHAR(30),
+    IN _modelo     VARCHAR(50),
+    IN _idCentro   INT,
+    IN _country    INT,
+    IN _relay      INT
 )
 BEGIN
+    DECLARE v_existe_centro INT DEFAULT 0;
+    DECLARE v_pais_centro   VARCHAR(20) DEFAULT '';
+
     IF EXISTS (SELECT 1 FROM maquinas WHERE CodigoMaquina = _serie) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'La serie ya existe';
     END IF;
-
-    INSERT INTO maquinas (
-        CodigoMaquina,
-        Modelo,
-        EsVisible,
-        EsActivo,
-        idCentro,
-        country,
-        onOff,
-        uSRV
-    ) VALUES (
-        _serie,
-        _modelo,
-        0,
-        1,
-        1,
-        NULL,
-        1,
-        '0x0007c8'
-    );
-
-    SELECT
-        IdMaquina,
-        CodigoMaquina,
-        Modelo,
-        EsVisible,
-        EsActivo,
-        idCentro,
-        country
-    FROM maquinas
-    WHERE CodigoMaquina = _serie;
-END;;
-DELIMITER ;
-```
-
-```sql
-DROP PROCEDURE IF EXISTS `usp_activar_maquina`;
-DELIMITER ;;
-CREATE PROCEDURE `usp_activar_maquina`(
-    IN _idMaquina INT,
-    IN _idCentro  INT,
-    IN _country   INT
-)
-BEGIN
-    DECLARE v_existe_centro  INT DEFAULT 0;
-    DECLARE v_es_staging     INT DEFAULT 0;
-    DECLARE v_pais_centro    VARCHAR(20) DEFAULT '';
 
     SELECT COUNT(1) INTO v_existe_centro
     FROM centros
@@ -75,18 +34,6 @@ BEGIN
     IF v_existe_centro = 0 THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Centro no existe o está inactivo';
-    END IF;
-
-    SELECT COUNT(1) INTO v_es_staging
-    FROM maquinas
-    WHERE IdMaquina = _idMaquina
-      AND EsVisible = 0
-      AND EsActivo  = 1
-      AND country   IS NULL;
-
-    IF v_es_staging = 0 THEN
-        SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'La máquina no está en staging o ya fue activada';
     END IF;
 
     SELECT
@@ -108,29 +55,49 @@ BEGIN
             SET MESSAGE_TEXT = 'El country no corresponde al país del centro asignado';
     END IF;
 
-    UPDATE maquinas
-    SET
-        idCentro  = _idCentro,
-        country   = _country,
-        EsVisible = 1
-    WHERE IdMaquina = _idMaquina;
+    INSERT INTO maquinas (
+        CodigoMaquina,
+        Modelo,
+        EsVisible,
+        EsActivo,
+        idCentro,
+        country,
+        relay,
+        onOff,
+        uSRV
+    ) VALUES (
+        _serie,
+        _modelo,
+        1,
+        1,
+        _idCentro,
+        _country,
+        _relay,
+        0,
+        '0x0007c8'
+    );
 
     SELECT
         m.IdMaquina,
         m.CodigoMaquina,
         m.Modelo,
         m.EsVisible,
+        m.EsActivo,
+        m.idCentro,
         m.country,
+        m.relay,
         c.NombreCentro,
         c.EsChile,
         c.EsColombia,
         c.EsAustralia
     FROM maquinas m
     INNER JOIN centros c ON c.IdCentro = m.idCentro
-    WHERE m.IdMaquina = _idMaquina;
+    WHERE m.CodigoMaquina = _serie;
 END;;
 DELIMITER ;
 ```
+
+
 
 ```sql
 DROP TRIGGER IF EXISTS `UPDAT_CONFIG`;

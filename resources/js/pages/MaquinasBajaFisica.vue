@@ -2,7 +2,6 @@
 import { router, Head } from '@inertiajs/vue3';
 import { computed, ref } from 'vue';
 import Layout from '../components/Layout.vue';
-import { useMaquinaModal } from '../composables/useMaquinaModal';
 
 const props = defineProps<{
     datos: any[];
@@ -14,40 +13,50 @@ const props = defineProps<{
 }>();
 
 const pais = ref(props.paisActual);
+const showToast = ref(false);
+const toastMessage = ref('');
+const toastType = ref<'success' | 'error'>('success');
+const showModal = ref(false);
+const showConfirm = ref(false);
+const confirmAction = ref<(() => void) | null>(null);
+const confirmMessage = ref('');
+const modalData = ref<Record<string, any> | null>(null);
 const searchQuery = ref('');
-const showCreateModal = ref(false);
-const createForm = ref({
-    serie: '',
-    modelo: '',
-    idCentro: 0,
-    country: 0,
-    relay: 0,
-});
-const centros = ref<{ IdCentro: number; NombreCentro: string }[]>([]);
-const loadingCentros = ref(false);
-const creating = ref(false);
 
-const {
-    showToast,
-    toastMessage,
-    toastType,
-    showModal,
-    modalData,
-    showConfirm,
-    confirmMessage,
-    toast,
-    openEditModal,
-    closeModal,
-    confirmToggle,
-    executeConfirm,
-    cancelConfirm,
-    saveModal,
-} = useMaquinaModal(pais);
+function toast(
+    message: string,
+    type: 'success' | 'error' = 'success',
+    duration = 3000,
+) {
+    toastMessage.value = message;
+    toastType.value = type;
+    showToast.value = true;
+    setTimeout(() => {
+        showToast.value = false;
+    }, duration);
+}
+
+function confirmToggle(message: string, action: () => void) {
+    confirmMessage.value = message;
+    confirmAction.value = action;
+    showConfirm.value = true;
+}
+
+function executeConfirm() {
+    confirmAction.value?.();
+    showConfirm.value = false;
+    confirmAction.value = null;
+}
+
+function cancelConfirm() {
+    showConfirm.value = false;
+    confirmAction.value = null;
+}
 
 if (props.error === 'serie_duplicada') {
     toast('El número de serie ya está asignado a otra máquina', 'error', 5000);
 }
-if (props.guardado && props.success) {
+if (props.guardado === true && props.success) {
     toast(props.success, 'success', 3000);
 }
 
@@ -77,150 +86,69 @@ const rmtCount = computed(
 
 function filtrar() {
     router.get(
-        '/maquinas/visibles',
+        '/maquinas/baja-fisica',
         { pais: pais.value },
         { preserveScroll: true },
     );
+}
+
+function openEditModal(row: Record<string, any>) {
+    modalData.value = { ...row };
+    showModal.value = true;
+}
+
+function closeModal() {
+    showModal.value = false;
+    modalData.value = null;
+}
+
+function saveModal() {
+    if (!modalData.value) return;
+    const data = modalData.value;
+
+    const formData = new FormData();
+    formData.append('idMaquina', String(data.IdMaquina));
+    formData.append('idCentro', String(data.IdCentro));
+    formData.append('modelo', data.modelo ?? '');
+    formData.append('serie', data.serie ?? '');
+    formData.append('tON', data.tON ?? '');
+    formData.append('tOff', data.tOff ?? '');
+    formData.append('esVisible', String(Number(data.esVisible) ? 1 : 0));
+    formData.append('isRMT', String(Number(data.isRMT) ? 1 : 0));
+    formData.append('pais', pais.value);
+
+    const csrfToken =
+        document
+            .querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
+            ?.getAttribute('content') ?? '';
+
+    fetch('/api/maquinas/actualizar', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'X-CSRF-TOKEN': csrfToken, Accept: 'application/json' },
+        body: formData,
+    })
+        .then((res) => res.json())
+        .then((res) => {
+            if (res.success) {
+                toast('Cambios guardados correctamente', 'success');
+                closeModal();
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                toast(res.message ?? 'Error al guardar', 'error', 5000);
+            }
+        })
+        .catch((err) => toast('Error de red: ' + err.message, 'error', 5000));
 }
 
 function formatTime(time: string | null): string {
     if (!time || typeof time !== 'string' || time.length < 5) return '--:--';
     return time.substring(0, 5);
 }
-
-function openCreateModal() {
-    createForm.value = {
-        serie: '',
-        modelo: '',
-        idCentro: 0,
-        country: 0,
-        relay: 0,
-    };
-    showCreateModal.value = true;
-    loadCentros();
-}
-
-function closeCreateModal() {
-    showCreateModal.value = false;
-}
-
-async function loadCentros() {
-    loadingCentros.value = true;
-    try {
-        const res = await fetch(`/api/maquinas/centros?pais=${pais.value}`);
-        const data = await res.json();
-        if (data.success) {
-            centros.value = data.data;
-        }
-    } catch (e) {
-        console.error(e);
-    } finally {
-        loadingCentros.value = false;
-    }
-}
-
-function onCentroChange() {
-    const selected = centros.value.find(
-        (c) => c.IdCentro === createForm.value.idCentro,
-    );
-    if (selected) {
-        const paisLower = pais.value.toLowerCase();
-        const countryMap: Record<string, number> = {
-            chile: 1,
-            colombia: 2,
-            australia: 7,
-            peru: 3,
-            provincia: 3,
-        };
-        createForm.value.country = countryMap[paisLower] || 3;
-    }
-}
-
-async function crearMaquina() {
-    if (
-        !createForm.value.serie ||
-        !createForm.value.modelo ||
-        !createForm.value.idCentro
-    )
-        return;
-
-    creating.value = true;
-    const csrfToken =
-        document
-            .querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
-            ?.getAttribute('content') ?? '';
-
-    try {
-        const res = await fetch('/api/maquinas/crear', {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: {
-                'X-CSRF-TOKEN': csrfToken,
-                Accept: 'application/json',
-            },
-            body: new URLSearchParams({
-                serie: createForm.value.serie,
-                modelo: createForm.value.modelo,
-                idCentro: String(createForm.value.idCentro),
-                country: String(createForm.value.country),
-                relay: String(createForm.value.relay || 0),
-            }),
-        });
-        const data = await res.json();
-
-        if (data.success) {
-            toast('Máquina creada correctamente', 'success');
-            closeCreateModal();
-            setTimeout(() => window.location.reload(), 1500);
-        } else {
-            toast(data.message || 'Error al crear', 'error', 5000);
-        }
-    } catch (err: any) {
-        toast('Error: ' + err.message, 'error', 5000);
-    } finally {
-        creating.value = false;
-    }
-}
-
-function confirmarBaja(row: Record<string, any>) {
-    confirmToggle(
-        '¿Dar de baja esta máquina? Pasará a estado inactivo y no aparecerá en reportes.',
-        () => ejecutarBaja(row.IdMaquina),
-    );
-}
-
-async function ejecutarBaja(idMaquina: number) {
-    const csrfToken =
-        document
-            .querySelector<HTMLMetaElement>('meta[name="csrf-token"]')
-            ?.getAttribute('content') ?? '';
-
-    try {
-        const res = await fetch('/api/maquinas/baja', {
-            method: 'POST',
-            credentials: 'same-origin',
-            headers: {
-                'X-CSRF-TOKEN': csrfToken,
-                Accept: 'application/json',
-            },
-            body: new URLSearchParams({ idMaquina: String(idMaquina) }),
-        });
-        const data = await res.json();
-
-        if (data.success) {
-            toast('Máquina dada de baja', 'success');
-            setTimeout(() => window.location.reload(), 1500);
-        } else {
-            toast(data.message || 'Error al dar baja', 'error', 5000);
-        }
-    } catch (err: any) {
-        toast('Error: ' + err.message, 'error', 5000);
-    }
-}
 </script>
 
 <template>
-    <Head title="Máquinas" />
+    <Head title="Máquinas Baja Física" />
     <Layout>
         <div class="min-h-screen bg-slate-50 font-sans text-slate-700">
             <div class="mx-auto max-w-[1900px] px-2 py-4 sm:px-4 sm:py-6">
@@ -229,15 +157,14 @@ async function ejecutarBaja(idMaquina: number) {
                 >
                     <div>
                         <p
-                            class="mb-1 text-xs font-semibold tracking-[0.2em] text-indigo-500 uppercase"
+                            class="mb-1 text-xs font-semibold tracking-[0.2em] text-red-500 uppercase"
                         >
                             Máquinas
                         </p>
                         <h1
                             class="text-2xl font-black tracking-tight text-slate-800 sm:text-3xl"
                         >
-                            Listado
-                            <span class="text-indigo-400">Visibles</span>
+                            Baja <span class="text-red-400">Física</span>
                         </h1>
                         <p class="mt-1 text-xs text-slate-500">
                             {{ paisNombre[pais] || pais }} ·
@@ -245,26 +172,6 @@ async function ejecutarBaja(idMaquina: number) {
                         </p>
                     </div>
                     <div class="flex flex-wrap items-center gap-2">
-                        <button
-                            type="button"
-                            @click="openCreateModal"
-                            class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-500"
-                        >
-                            <svg
-                                class="mr-1.5 h-4 w-4"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M12 4v16m8-8H4"
-                                />
-                            </svg>
-                            Nueva Máquina
-                        </button>
                         <select
                             v-model="pais"
                             class="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
@@ -323,15 +230,13 @@ async function ejecutarBaja(idMaquina: number) {
                             {{ rmtCount }}
                         </p>
                     </div>
-                    <div
-                        class="rounded-xl border border-emerald-200 bg-emerald-50 p-4"
-                    >
+                    <div class="rounded-xl border border-red-200 bg-red-50 p-4">
                         <p
-                            class="text-[10px] tracking-wider text-emerald-600 uppercase"
+                            class="text-[10px] tracking-wider text-red-600 uppercase"
                         >
-                            Visibles
+                            Baja Física
                         </p>
-                        <p class="mt-1 text-2xl font-black text-emerald-600">
+                        <p class="mt-1 text-2xl font-black text-red-600">
                             {{ maquinasCount }}
                         </p>
                     </div>
@@ -397,11 +302,6 @@ async function ejecutarBaja(idMaquina: number) {
                                     class="w-20 px-3 py-3 text-center text-[10px] font-bold tracking-widest text-slate-500 uppercase"
                                 >
                                     RMT
-                                </th>
-                                <th
-                                    class="w-16 px-3 py-3 text-center text-[10px] font-bold tracking-widest text-slate-500 uppercase"
-                                >
-                                    Eliminar
                                 </th>
                                 <th
                                     class="w-16 px-3 py-3 text-center text-[10px] font-bold tracking-widest text-slate-500 uppercase"
@@ -495,27 +395,6 @@ async function ejecutarBaja(idMaquina: number) {
                                 </td>
                                 <td class="px-3 py-2.5 text-center">
                                     <button
-                                        @click="confirmarBaja(row)"
-                                        class="rounded-lg p-1.5 text-red-500 transition-colors hover:bg-red-50"
-                                        title="Dar de baja"
-                                    >
-                                        <svg
-                                            class="h-4 w-4"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                            stroke-width="1.5"
-                                        >
-                                            <path
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4l-8-4m8 4l8-4"
-                                            />
-                                        </svg>
-                                    </button>
-                                </td>
-                                <td class="px-3 py-2.5 text-center">
-                                    <button
                                         @click="openEditModal(row)"
                                         class="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-indigo-500"
                                     >
@@ -543,7 +422,8 @@ async function ejecutarBaja(idMaquina: number) {
                     v-if="!datos.length"
                     class="py-16 text-center text-slate-400"
                 >
-                    No hay máquinas para {{ paisNombre[pais] || pais }}.
+                    No hay máquinas en baja física para
+                    {{ paisNombre[pais] || pais }}.
                 </p>
             </div>
         </div>
@@ -654,7 +534,7 @@ async function ejecutarBaja(idMaquina: number) {
                                 >Visibilidad</label
                             >
                             <p class="text-[10px] text-slate-400">
-                                Si no es visible, no aparece en los reportes
+                                Activar para que aparezca en reportes
                             </p>
                         </div>
                         <div class="flex items-center gap-2">
@@ -809,133 +689,6 @@ async function ejecutarBaja(idMaquina: number) {
                         class="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600"
                     >
                         Confirmar
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <div
-            v-if="showCreateModal"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm"
-            @click.self="closeCreateModal"
-        >
-            <div class="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
-                <div class="mb-4 flex items-center justify-between">
-                    <h3 class="text-lg font-bold text-slate-800">
-                        Nueva Máquina
-                    </h3>
-                    <button
-                        @click="closeCreateModal"
-                        class="text-slate-400 hover:text-slate-600"
-                    >
-                        <svg
-                            class="h-5 w-5"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12"
-                            />
-                        </svg>
-                    </button>
-                </div>
-
-                <div class="space-y-4">
-                    <div>
-                        <label
-                            class="mb-1 block text-xs font-medium text-slate-600"
-                            >Serie</label
-                        >
-                        <input
-                            v-model="createForm.serie"
-                            type="text"
-                            placeholder="Número de serie"
-                            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-                        />
-                    </div>
-                    <div>
-                        <label
-                            class="mb-1 block text-xs font-medium text-slate-600"
-                            >Modelo</label
-                        >
-                        <input
-                            v-model="createForm.modelo"
-                            type="text"
-                            placeholder="Modelo de máquina"
-                            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-                        />
-                    </div>
-                    <div>
-                        <label
-                            class="mb-1 block text-xs font-medium text-slate-600"
-                            >Centro</label
-                        >
-                        <select
-                            v-model="createForm.idCentro"
-                            @change="onCentroChange"
-                            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-                        >
-                            <option :value="0" disabled>
-                                Seleccionar centro...
-                            </option>
-                            <option
-                                v-for="c in centros"
-                                :key="c.IdCentro"
-                                :value="c.IdCentro"
-                            >
-                                {{ c.NombreCentro }}
-                            </option>
-                        </select>
-                    </div>
-                    <div>
-                        <label
-                            class="mb-1 block text-xs font-medium text-slate-600"
-                            >Country ID</label
-                        >
-                        <input
-                            v-model="createForm.country"
-                            type="number"
-                            readonly
-                            class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500"
-                        />
-                    </div>
-                    <div>
-                        <label
-                            class="mb-1 block text-xs font-medium text-slate-600"
-                            >Relay</label
-                        >
-                        <input
-                            v-model="createForm.relay"
-                            type="number"
-                            placeholder="0"
-                            class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-                        />
-                    </div>
-                </div>
-
-                <div class="mt-6 flex justify-end gap-3">
-                    <button
-                        @click="closeCreateModal"
-                        class="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        type="button"
-                        @click="crearMaquina"
-                        :disabled="
-                            creating ||
-                            !createForm.serie ||
-                            !createForm.modelo ||
-                            !createForm.idCentro
-                        "
-                        class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
-                    >
-                        {{ creating ? 'Creando...' : 'Crear' }}
                     </button>
                 </div>
             </div>

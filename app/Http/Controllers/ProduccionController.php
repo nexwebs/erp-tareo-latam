@@ -844,6 +844,40 @@ class ProduccionController extends Controller
         ]);
     }
 
+    public function listadoMaquinasBajaFisica(Request $request)
+    {
+        $pais = $request->get('pais', 'peru');
+
+        $datos = DB::select("
+            SELECT c.IdCentro, m.IdMaquina, m.Modelo AS modelo, c.NombreCentro AS centro, 
+                   co.Descripcion AS descripcionPais, m.version, m.lastReport,
+                   m.CodigoMaquina AS serie, m.EsVisible AS esVisible, m.relay AS Relay,
+                   c.tOn AS tON, c.tOff AS tOff, 
+                   cfg.isRMT AS isRMT
+            FROM maquinas m
+            INNER JOIN centros c ON c.IdCentro = m.idCentro
+            LEFT JOIN config cfg ON cfg.idMaquina = m.IdMaquina
+            LEFT JOIN country co ON co.idCountry = m.country
+            WHERE m.EsVisible = 0 AND m.EsActivo = 0 AND (
+                (? = 'chile' AND c.EsChile = 1 AND c.EsProvincia = 0)
+                OR (? = 'colombia' AND c.EsColombia = 1 AND c.EsProvincia = 0)
+                OR (? = 'australia' AND c.EsAustralia = 1 AND c.EsProvincia = 0)
+                OR (? = 'provincia' AND c.EsProvincia = 1)
+                OR (? NOT IN ('chile', 'colombia', 'australia', 'provincia') 
+                    AND c.EsChile = 0 AND c.EsColombia = 0 AND c.EsAustralia = 0 AND c.EsProvincia = 0)
+            )
+            ORDER BY c.NombreCentro, m.CodigoMaquina
+        ", [$pais, $pais, $pais, $pais, $pais]);
+
+        $paises = ['chile', 'colombia', 'australia', 'peru', 'provincia'];
+
+        return inertia('MaquinasBajaFisica', [
+            'datos' => $datos,
+            'paises' => $paises,
+            'paisActual' => $pais,
+        ]);
+    }
+
     public function toggleRMT(Request $request)
     {
         $request->validate([
@@ -866,7 +900,7 @@ class ProduccionController extends Controller
             ]);
         }
 
-        return redirect("/maquinas/listado?pais={$pais}");
+        return redirect("/maquinas/visibles?pais={$pais}");
     }
 
     public function actualizarMaquina(Request $request)
@@ -1001,17 +1035,17 @@ class ProduccionController extends Controller
     {
         $request->validate([
             'idMaquina' => 'required|integer',
-            'modelo'    => 'nullable|string',
-            'serie'     => 'nullable|string',
-            'tON'       => 'nullable|string',
-            'tOff'      => 'nullable|string',
+            'modelo' => 'nullable|string',
+            'serie' => 'nullable|string',
+            'tON' => 'nullable|string',
+            'tOff' => 'nullable|string',
             'esVisible' => 'nullable',
-            'isRMT'     => 'nullable',
+            'isRMT' => 'nullable',
         ]);
 
-        $idMaquina  = (int) $request->input('idMaquina');
-        $esVisible  = (int) $request->input('esVisible', 1);
-        $isRMT      = (int) $request->input('isRMT', 0);
+        $idMaquina = (int) $request->input('idMaquina');
+        $esVisible = (int) $request->input('esVisible', 1);
+        $isRMT = (int) $request->input('isRMT', 0);
         $nuevaSerie = $request->input('serie');
 
         if ($nuevaSerie) {
@@ -1023,7 +1057,7 @@ class ProduccionController extends Controller
             if ($duplicado) {
                 return response()->json([
                     'success' => false,
-                    'error'   => 'serie_duplicada',
+                    'error' => 'serie_duplicada',
                     'message' => 'El número de serie ya está asignado a otra máquina',
                 ], 422);
             }
@@ -1049,7 +1083,7 @@ class ProduccionController extends Controller
 
             if ($centroId) {
                 DB::table('centros')->where('IdCentro', $centroId)->update([
-                    'tOn'  => $request->input('tON') ?: null,
+                    'tOn' => $request->input('tON') ?: null,
                     'tOff' => $request->input('tOff') ?: null,
                 ]);
             }
@@ -1063,13 +1097,13 @@ class ProduccionController extends Controller
         } else {
             DB::table('config')->insert([
                 'idMaquina' => $idMaquina,
-                'isRMT'     => $isRMT,
+                'isRMT' => $isRMT,
             ]);
         }
 
         return response()->json([
-            'success'   => true,
-            'message'   => 'Cambios guardados correctamente',
+            'success' => true,
+            'message' => 'Cambios guardados correctamente',
             'esVisible' => $esVisible,
         ]);
     }
