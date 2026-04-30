@@ -26,3 +26,9 @@ Route::get('/produccion/excel', [ProduccionController::class, 'exportarExcel'])-
 Route::get('/produccion/eficiencia/pdf', [ProduccionController::class, 'controlarPdf'])->middleware('auth')->name('produccion.eficiencia.pdf');
 Route::get('/produccion/eficiencia/{pais}/pdf', [ProduccionController::class, 'controlarPdf'])->middleware('auth')->name('produccion.eficiencia.pais.pdf');
 Route::get('/produccion/{pais}/pdf', [ProduccionController::class, 'exportarPdf'])->middleware('auth')->name('produccion.pdf');
+
+Route::get('/maquinas/listado', [ProduccionController::class, 'listadoMaquinas'])->middleware('auth')->name('maquinas.listado');
+Route::get('/maquinas/inactivas', [ProduccionController::class, 'listadoMaquinasInactivas'])->middleware('auth')->name('maquinas.inactivas');
+Route::post('/maquinas/toggle-rmt', [ProduccionController::class, 'toggleRMT'])->middleware('auth')->name('maquinas.toggleRMT');
+Route::post('/maquinas/actualizar', [ProduccionController::class, 'actualizarMaquina'])->middleware('auth')->name('maquinas.actualizar');
+Route::post('/api/maquinas/actualizar', [ProduccionController::class, 'actualizarMaquinaApi'])->middleware('auth')->name('api.maquinas.actualizar');

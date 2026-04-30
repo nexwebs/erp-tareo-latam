@@ -100,6 +100,7 @@
                     label="Producción"
                     :collapsed="!sidebarOpen"
                     :defaultOpen="isGroupActive('produccion')"
+                    @expand="expandSidebar"
                 >
                     <NavSubItem
                         href="/produccion/australia"
@@ -132,25 +133,26 @@
                     <div class="mx-3 my-1 h-px bg-slate-200"></div>
                 </NavGroup>
 
-                <!-- <NavGroup
-                    icon="search"
-                    label="Consultas"
+                <NavGroup
+                    icon="clipboard"
+                    label="Máquinas"
                     :collapsed="!sidebarOpen"
-                    :defaultOpen="isGroupActive('consultas')"
+                    :defaultOpen="isGroupActive('maquinas')"
+                    @expand="expandSidebar"
                 >
                     <NavSubItem
-                        href="/consultas/datos"
-                        :active="isActive('/consultas/datos')"
-                        >Consulta Datos</NavSubItem
+                        href="/maquinas/listado"
+                        :active="isActive('/maquinas/listado')"
+                        >Activas</NavSubItem
                     >
                     <NavSubItem
-                        href="/consultas/maquinas"
-                        :active="isActive('/consultas/maquinas')"
-                        >Estado Máquinas</NavSubItem
+                        href="/maquinas/inactivas"
+                        :active="isActive('/maquinas/inactivas')"
+                        >Inactivas</NavSubItem
                     >
                 </NavGroup>
 
-                <NavGroup
+                <!-- <NavGroup
                     icon="chart"
                     label="Reportes"
                     :collapsed="!sidebarOpen"
@@ -335,7 +337,27 @@ import NavItem from './NavItem.vue';
 import NavSubItem from './NavSubItem.vue';
 
 const page = usePage();
-const sidebarOpen = ref(false);
+
+function getInitialSidebarState() {
+    if (typeof window !== 'undefined') {
+        const path = window.location.pathname;
+        const expandsOnRoutes = [
+            '/produccion/peru',
+            '/produccion/chile',
+            '/produccion/colombia',
+            '/produccion/australia',
+            '/produccion/hora',
+            '/produccion/eficiencia',
+            '/produccion/controlar',
+            '/maquinas/listado',
+            '/maquinas/inactivas',
+        ];
+        return expandsOnRoutes.some((route) => path.startsWith(route));
+    }
+    return false;
+}
+
+const sidebarOpen = ref(getInitialSidebarState());
 const horaActual = ref('');
 let timer = null;
 
@@ -354,6 +376,10 @@ const userInitials = computed(() => {
 
 const isActive = (path) =>
     typeof window !== 'undefined' && window.location.pathname === path;
+
+const expandSidebar = () => {
+    sidebarOpen.value = true;
+};
 
 const isGroupActive = (groupName) => {
     const path = typeof window !== 'undefined' ? window.location.pathname : '';

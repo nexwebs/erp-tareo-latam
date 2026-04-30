@@ -775,4 +775,302 @@ class ProduccionController extends Controller
             'datos' => $datos,
         ]);
     }
+
+    public function listadoMaquinas(Request $request)
+    {
+        $pais = $request->get('pais', 'chile');
+
+        $datos = DB::select("
+            SELECT c.IdCentro, m.IdMaquina, m.Modelo AS modelo, c.NombreCentro AS centro, 
+                   co.Descripcion AS descripcionPais, m.version, m.lastReport,
+                   m.CodigoMaquina AS serie, m.EsVisible AS esVisible, m.relay AS Relay,
+                   c.tOn AS tON, c.tOff AS tOff, 
+                   cfg.isRMT AS isRMT
+            FROM maquinas m
+            INNER JOIN centros c ON c.IdCentro = m.idCentro
+            LEFT JOIN config cfg ON cfg.idMaquina = m.IdMaquina
+            LEFT JOIN country co ON co.idCountry = m.country
+            WHERE m.EsVisible = 1 AND (
+                (? = 'chile' AND c.EsChile = 1)
+                OR (? = 'colombia' AND c.EsColombia = 1)
+                OR (? = 'australia' AND c.EsAustralia = 1)
+                OR (? = 'provincia' AND c.EsProvincia = 1)
+                OR (? NOT IN ('chile', 'colombia', 'australia', 'provincia') 
+                    AND c.EsChile = 0 AND c.EsColombia = 0 AND c.EsAustralia = 0 AND c.EsProvincia = 0)
+            )
+            ORDER BY c.NombreCentro, m.CodigoMaquina
+        ", [$pais, $pais, $pais, $pais, $pais]);
+
+        $paises = ['chile', 'colombia', 'australia', 'peru'];
+
+        return inertia('MaquinasListado', [
+            'datos' => $datos,
+            'paises' => $paises,
+            'paisActual' => $pais,
+        ]);
+    }
+
+    public function listadoMaquinasInactivas(Request $request)
+    {
+        $pais = $request->get('pais', 'chile');
+
+        $datos = DB::select("
+            SELECT c.IdCentro, m.IdMaquina, m.Modelo AS modelo, c.NombreCentro AS centro, 
+                   co.Descripcion AS descripcionPais, m.version, m.lastReport,
+                   m.CodigoMaquina AS serie, m.EsVisible AS esVisible, m.relay AS Relay,
+                   c.tOn AS tON, c.tOff AS tOff, 
+                   cfg.isRMT AS isRMT
+            FROM maquinas m
+            INNER JOIN centros c ON c.IdCentro = m.idCentro
+            LEFT JOIN config cfg ON cfg.idMaquina = m.IdMaquina
+            LEFT JOIN country co ON co.idCountry = m.country
+            WHERE m.EsVisible = 0 AND (
+                (? = 'chile' AND c.EsChile = 1)
+                OR (? = 'colombia' AND c.EsColombia = 1)
+                OR (? = 'australia' AND c.EsAustralia = 1)
+                OR (? = 'provincia' AND c.EsProvincia = 1)
+                OR (? NOT IN ('chile', 'colombia', 'australia', 'provincia') 
+                    AND c.EsChile = 0 AND c.EsColombia = 0 AND c.EsAustralia = 0 AND c.EsProvincia = 0)
+            )
+            ORDER BY c.NombreCentro, m.CodigoMaquina
+        ", [$pais, $pais, $pais, $pais, $pais]);
+
+        $paises = ['chile', 'colombia', 'australia', 'peru'];
+
+        return inertia('MaquinasInactivas', [
+            'datos' => $datos,
+            'paises' => $paises,
+            'paisActual' => $pais,
+        ]);
+    }
+
+    public function toggleRMT(Request $request)
+    {
+        $request->validate([
+            'idMaquina' => 'required|integer',
+            'isRMT' => 'required|boolean',
+        ]);
+
+        $idMaquina = $request->input('idMaquina');
+        $isRMT = $request->input('isRMT') ? 1 : 0;
+        $pais = $request->input('pais', 'chile');
+
+        $existe = DB::table('config')->where('idMaquina', $idMaquina)->first();
+
+        if ($existe) {
+            DB::table('config')->where('idMaquina', $idMaquina)->update(['isRMT' => $isRMT]);
+        } else {
+            DB::table('config')->insert([
+                'idMaquina' => $idMaquina,
+                'isRMT' => $isRMT,
+            ]);
+        }
+
+        return redirect("/maquinas/listado?pais={$pais}");
+    }
+
+    public function actualizarMaquina(Request $request)
+    {
+        $request->validate([
+            'idMaquina' => 'required|integer',
+            'modelo' => 'nullable|string',
+            'serie' => 'nullable|string',
+            'tON' => 'nullable',
+            'tOff' => 'nullable',
+            'esVisible' => 'nullable|integer',
+            'isRMT' => 'nullable|integer',
+        ]);
+
+        $idMaquina = $request->input('idMaquina');
+        $pais = $request->input('pais', 'chile');
+        $nuevaSerie = $request->input('serie');
+        $esVisible = $request->input('esVisible', 1);
+        $vista = $esVisible === 1 ? 'MaquinasListado' : 'MaquinasInactivas';
+
+        if ($nuevaSerie) {
+            $existeSerie = DB::table('maquinas')
+                ->where('CodigoMaquina', $nuevaSerie)
+                ->where('IdMaquina', '!=', $idMaquina)
+                ->exists();
+
+            if ($existeSerie) {
+                $datos = DB::select("
+                    SELECT c.IdCentro, m.IdMaquina, m.Modelo AS modelo, c.NombreCentro AS centro, 
+                           co.Descripcion AS descripcionPais, m.version, m.lastReport,
+                           m.CodigoMaquina AS serie, m.EsVisible AS esVisible, m.relay AS Relay,
+                           c.tOn AS tON, c.tOff AS tOff, 
+                           cfg.isRMT AS isRMT
+                    FROM maquinas m
+                    INNER JOIN centros c ON c.IdCentro = m.idCentro
+                    LEFT JOIN config cfg ON cfg.idMaquina = m.IdMaquina
+                    LEFT JOIN country co ON co.idCountry = m.country
+                    WHERE m.EsVisible = ? AND (
+                        (? = 'chile' AND c.EsChile = 1)
+                        OR (? = 'colombia' AND c.EsColombia = 1)
+                        OR (? = 'australia' AND c.EsAustralia = 1)
+                        OR (? = 'provincia' AND c.EsProvincia = 1)
+                        OR (? NOT IN ('chile', 'colombia', 'australia', 'provincia') 
+                            AND c.EsChile = 0 AND c.EsColombia = 0 AND c.EsAustralia = 0 AND c.EsProvincia = 0)
+                    )
+                    ORDER BY c.NombreCentro, m.CodigoMaquina
+                ", [$esVisible, $pais, $pais, $pais, $pais, $pais]);
+
+                return inertia($vista, [
+                    'datos' => $datos,
+                    'paises' => ['chile', 'colombia', 'australia', 'peru'],
+                    'paisActual' => $pais,
+                    'error' => 'serie_duplicada',
+                    'guardado' => false,
+                ]);
+            }
+        }
+
+        $updateData = [];
+        if ($request->filled('modelo')) {
+            $updateData['Modelo'] = $request->input('modelo');
+        }
+        if ($request->filled('serie')) {
+            $updateData['CodigoMaquina'] = $request->input('serie');
+        }
+
+        if (! empty($updateData)) {
+            DB::table('maquinas')
+                ->where('IdMaquina', $idMaquina)
+                ->update($updateData);
+        }
+
+        if ($request->has('tON') || $request->has('tOff')) {
+            $centroId = DB::table('maquinas')->where('IdMaquina', $idMaquina)->value('idCentro');
+            if ($centroId) {
+                DB::table('centros')
+                    ->where('IdCentro', $centroId)
+                    ->update([
+                        'tOn' => $request->input('tON'),
+                        'tOff' => $request->input('tOff'),
+                    ]);
+            }
+        }
+
+        if ($request->has('esVisible')) {
+            DB::table('maquinas')
+                ->where('IdMaquina', $idMaquina)
+                ->update(['EsVisible' => $request->input('esVisible')]);
+        }
+
+        $existe = DB::table('config')->where('idMaquina', $idMaquina)->exists();
+        if ($existe) {
+            DB::table('config')->where('idMaquina', $idMaquina)->update(['isRMT' => $request->input('isRMT', 0)]);
+        } else {
+            DB::table('config')->insert([
+                'idMaquina' => $idMaquina,
+                'isRMT' => $request->input('isRMT', 0),
+            ]);
+        }
+
+        $datos = DB::select("
+            SELECT c.IdCentro, m.IdMaquina, m.Modelo AS modelo, c.NombreCentro AS centro, 
+                   co.Descripcion AS descripcionPais, m.version, m.lastReport,
+                   m.CodigoMaquina AS serie, m.EsVisible AS esVisible, m.relay AS Relay,
+                   c.tOn AS tON, c.tOff AS tOff, 
+                   cfg.isRMT AS isRMT
+            FROM maquinas m
+            INNER JOIN centros c ON c.IdCentro = m.idCentro
+            LEFT JOIN config cfg ON cfg.idMaquina = m.IdMaquina
+            LEFT JOIN country co ON co.idCountry = m.country
+            WHERE m.EsVisible = ? AND (
+                (? = 'chile' AND c.EsChile = 1)
+                OR (? = 'colombia' AND c.EsColombia = 1)
+                OR (? = 'australia' AND c.EsAustralia = 1)
+                OR (? = 'provincia' AND c.EsProvincia = 1)
+                OR (? NOT IN ('chile', 'colombia', 'australia', 'provincia') 
+                    AND c.EsChile = 0 AND c.EsColombia = 0 AND c.EsAustralia = 0 AND c.EsProvincia = 0)
+            )
+            ORDER BY c.NombreCentro, m.CodigoMaquina
+        ", [$esVisible, $pais, $pais, $pais, $pais, $pais, $pais]);
+
+        return inertia($vista, [
+            'datos' => $datos,
+            'paises' => ['chile', 'colombia', 'australia', 'peru'],
+            'paisActual' => $pais,
+            'success' => 'Cambios guardados correctamente',
+            'guardado' => true,
+        ]);
+    }
+
+    public function actualizarMaquinaApi(Request $request)
+    {
+        $request->validate([
+            'idMaquina' => 'required|integer',
+            'modelo'    => 'nullable|string',
+            'serie'     => 'nullable|string',
+            'tON'       => 'nullable|string',
+            'tOff'      => 'nullable|string',
+            'esVisible' => 'nullable',
+            'isRMT'     => 'nullable',
+        ]);
+
+        $idMaquina  = (int) $request->input('idMaquina');
+        $esVisible  = (int) $request->input('esVisible', 1);
+        $isRMT      = (int) $request->input('isRMT', 0);
+        $nuevaSerie = $request->input('serie');
+
+        if ($nuevaSerie) {
+            $duplicado = DB::table('maquinas')
+                ->where('CodigoMaquina', $nuevaSerie)
+                ->where('IdMaquina', '!=', $idMaquina)
+                ->exists();
+
+            if ($duplicado) {
+                return response()->json([
+                    'success' => false,
+                    'error'   => 'serie_duplicada',
+                    'message' => 'El número de serie ya está asignado a otra máquina',
+                ], 422);
+            }
+        }
+
+        $maquinaData = [
+            'EsVisible' => DB::raw($esVisible),
+        ];
+
+        if ($request->filled('modelo')) {
+            $maquinaData['Modelo'] = $request->input('modelo');
+        }
+        if ($request->filled('serie')) {
+            $maquinaData['CodigoMaquina'] = $request->input('serie');
+        }
+
+        DB::table('maquinas')->where('IdMaquina', $idMaquina)->update($maquinaData);
+
+        if ($request->has('tON') || $request->has('tOff')) {
+            $centroId = DB::table('maquinas')
+                ->where('IdMaquina', $idMaquina)
+                ->value('idCentro');
+
+            if ($centroId) {
+                DB::table('centros')->where('IdCentro', $centroId)->update([
+                    'tOn'  => $request->input('tON') ?: null,
+                    'tOff' => $request->input('tOff') ?: null,
+                ]);
+            }
+        }
+
+        $existeConfig = DB::table('config')->where('idMaquina', $idMaquina)->exists();
+        if ($existeConfig) {
+            DB::table('config')
+                ->where('idMaquina', $idMaquina)
+                ->update(['isRMT' => $isRMT]);
+        } else {
+            DB::table('config')->insert([
+                'idMaquina' => $idMaquina,
+                'isRMT'     => $isRMT,
+            ]);
+        }
+
+        return response()->json([
+            'success'   => true,
+            'message'   => 'Cambios guardados correctamente',
+            'esVisible' => $esVisible,
+        ]);
+    }
 }
