@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Centro;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\JsonResponse;
 
 class MaquinaController extends Controller
 {
@@ -246,6 +247,137 @@ class MaquinaController extends Controller
         return response()->json([
             'success' => true,
             'data' => $centros,
+        ]);
+    }
+    public function getCountries(Request $request): JsonResponse
+    {
+        try {
+            $countries = DB::table('country')
+                ->select('IdCountry', 'Descripcion')
+                ->orderBy('Descripcion', 'asc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data'    => $countries,
+            ], 200);
+
+        } catch (Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener países',
+                'error'   => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
+    public function eliminarBajaFisica(Request $request): JsonResponse
+    {
+        $request->validate(['idMaquina' => 'required|integer']);
+
+        $idMaquina = $request->input('idMaquina');
+
+        $elegible = DB::table('maquinas')
+            ->where('IdMaquina', $idMaquina)
+            ->where('EsVisible', 0)
+            ->where('EsActivo', 0)
+            ->exists();
+
+        if (! $elegible) {
+            return response()->json([
+                'success' => false,
+                'error'   => 'no_elegible',
+                'message' => 'Solo máquinas en baja física pueden eliminarse',
+            ], 422);
+        }
+
+        $produccion = DB::table('produccionperu')->where('idMaquina', $idMaquina)->count()
+            + DB::table('produccionchile')->where('idMaquina', $idMaquina)->count()
+            + DB::table('produccioncolombia')->where('idMaquina', $idMaquina)->count()
+            + DB::table('produccionaustralia')->where('idMaquina', $idMaquina)->count();
+
+        if ($produccion > 0) {
+            return response()->json([
+                'success' => false,
+                'error'   => 'tiene_produccion',
+                'message' => 'Máquina con producción registrada, no puede eliminarse',
+            ], 422);
+        }
+
+        DB::table('maquinas')->where('IdMaquina', $idMaquina)->delete();
+
+        return response()->json(['success' => true, 'message' => 'Máquina eliminada']);
+    }
+
+
+    public function bajaYEliminar(Request $request): JsonResponse
+    {
+        $request->validate(['idMaquina' => 'required|integer']);
+        $idMaquina = $request->input('idMaquina');
+
+        $maquina = DB::table('maquinas')
+            ->where('IdMaquina', $idMaquina)
+            ->where('EsVisible', 0)
+            ->where('EsActivo', 1)
+            ->first();
+
+        if (!$maquina) {
+            return response()->json([
+                'success' => false,
+                'error'   => 'no_elegible',
+                'message' => 'Solo máquinas no visibles pueden eliminarse así',
+            ], 422);
+        }
+
+        $produccion = DB::table('produccionperu')->where('idMaquina', $idMaquina)->count()
+            + DB::table('produccionchile')->where('idMaquina', $idMaquina)->count()
+            + DB::table('produccioncolombia')->where('idMaquina', $idMaquina)->count()
+            + DB::table('produccionaustralia')->where('idMaquina', $idMaquina)->count();
+
+        if ($produccion > 0) {
+            return response()->json([
+                'success' => false,
+                'error'   => 'tiene_produccion',
+                'message' => 'Máquina con producción, use baja lógica',
+            ], 422);
+        }
+
+        DB::transaction(function () use ($idMaquina) {
+            DB::select('CALL usp_dar_baja_maquina(?)', [$idMaquina]);
+            DB::table('maquinas')->where('IdMaquina', $idMaquina)->delete();
+        });
+
+        return response()->json(['success' => true, 'message' => 'Máquina eliminada']);
+    }
+
+    public function getModelos(Request $request): JsonResponse
+    {
+        $pais = $request->get('pais', 'peru');
+
+        $query = DB::table('maquinas as m')
+            ->join('centros as c', 'c.IdCentro', '=', 'm.idCentro')
+            ->whereNotNull('m.Modelo')
+            ->where('m.Modelo', '!=', '')
+            ->where('m.EsActivo', 1);
+
+        $query = match ($pais) {
+            'chile'     => $query->where('c.EsChile', 1),
+            'colombia'  => $query->where('c.EsColombia', 1),
+            'australia' => $query->where('c.EsAustralia', 1),
+            'provincia' => $query->where('c.EsProvincia', 1),
+            default     => $query->where('c.EsChile', 0)
+                                ->where('c.EsColombia', 0)
+                                ->where('c.EsAustralia', 0)
+                                ->where('c.EsProvincia', 0),
+        };
+
+        $modelos = $query->distinct()
+            ->orderBy('m.Modelo')
+            ->pluck('m.Modelo');
+
+        return response()->json([
+            'success' => true,
+            'data'    => $modelos,
         ]);
     }
 }

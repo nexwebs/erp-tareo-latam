@@ -11,14 +11,20 @@ class CentroController extends Controller
     public function listar(Request $request)
     {
         $pais = $request->get('pais', 'peru');
+        $todos = $request->get('todos', false);
 
-        $query = Centro::where('EsActivo', 1);
+        $query = Centro::query();
+
+        if (! $todos) {
+            $query = $query->where('EsActivo', 1);
+        }
 
         $query = match ($pais) {
             'chile' => $query->where('EsChile', 1),
             'colombia' => $query->where('EsColombia', 1),
             'australia' => $query->where('EsAustralia', 1),
             'provincia' => $query->where('EsProvincia', 1),
+            'todos' => $query,
             default => $query->where('EsChile', 0)
                 ->where('EsColombia', 0)
                 ->where('EsAustralia', 0)
@@ -26,13 +32,26 @@ class CentroController extends Controller
         };
 
         $centros = $query->orderBy('NombreCentro')->get();
-
         $zonas = DB::table('zonas')->orderBy('descripcion')->get();
 
         return inertia('CentrosListado', [
             'datos' => $centros,
             'zonas' => $zonas,
             'paisActual' => $pais,
+            'modoTodos' => $todos,
+        ]);
+    }
+
+    public function listarTodos()
+    {
+        $centros = Centro::orderBy('NombreCentro')->get();
+        $zonas = DB::table('zonas')->orderBy('descripcion')->get();
+
+        return inertia('CentrosListado', [
+            'datos' => $centros,
+            'zonas' => $zonas,
+            'paisActual' => 'todos',
+            'modoTodos' => true,
         ]);
     }
 
@@ -249,7 +268,7 @@ class CentroController extends Controller
         }
     }
 
-    public function listarTodos(Request $request)
+    public function listarTodosApi(Request $request)
     {
         $pais = $request->get('pais', 'peru');
 

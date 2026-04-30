@@ -30,7 +30,7 @@
                         <p
                             class="truncate text-[9px] font-medium tracking-widest text-emerald-600 uppercase"
                         >
-                            Tareo Latam
+                           Consolidado Latam
                         </p>
                     </div>
                 </div>

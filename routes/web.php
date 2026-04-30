@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\CentroController;
 use App\Http\Controllers\MaquinaController;
 use App\Http\Controllers\ProduccionController;
 use Illuminate\Support\Facades\Route;
@@ -40,12 +41,21 @@ Route::post('/api/maquinas/activar', [MaquinaController::class, 'activar'])->mid
 Route::post('/api/maquinas/baja', [MaquinaController::class, 'darBaja'])->middleware('auth')->name('api.maquinas.baja');
 Route::post('/api/maquinas/eliminar-staging', [MaquinaController::class, 'eliminarStaging'])->middleware('auth')->name('api.maquinas.eliminarStaging');
 Route::get('/api/maquinas/centros', [MaquinaController::class, 'getCentros'])->middleware('auth')->name('api.maquinas.centros');
+Route::get('/api/maquinas/countries', [MaquinaController::class, 'getCountries'])->middleware('auth')->name('api.maquinas.countries');
+Route::post('/api/maquinas/eliminar-baja-fisica', [MaquinaController::class, 'eliminarBajaFisica'])->middleware('auth')->name('api.maquinas.eliminarBajaFisica');
+Route::post('/api/maquinas/baja-y-eliminar', [MaquinaController::class, 'bajaYEliminar'])
+    ->middleware('auth')
+    ->name('api.maquinas.bajaYEliminar');
+Route::get('/api/maquinas/modelos', [MaquinaController::class, 'getModelos'])->middleware('auth')->name('api.maquinas.modelos');
+
 
 Route::get('/centros/gestion', [CentroController::class, 'listar'])->middleware('auth')->name('centros.listado');
+Route::get('/centros/todos', [CentroController::class, 'listarTodos'])->middleware('auth')->name('centros.todos');
 Route::post('/api/centros/crear', [CentroController::class, 'crear'])->middleware('auth')->name('api.centros.crear');
 Route::post('/api/centros/actualizar', [CentroController::class, 'actualizar'])->middleware('auth')->name('api.centros.actualizar');
 Route::post('/api/centros/baja', [CentroController::class, 'darBaja'])->middleware('auth')->name('api.centros.baja');
 Route::post('/api/centros/eliminar-staging', [CentroController::class, 'eliminarStaging'])->middleware('auth')->name('api.centros.eliminarStaging');
+
 Route::get('/api/centros/zonas', [CentroController::class, 'getZonas'])->middleware('auth')->name('api.centros.zonas');
 Route::post('/api/centros/zonas/crear', [CentroController::class, 'crearZona'])->middleware('auth')->name('api.centros.zonas.crear');
 Route::post('/api/centros/zonas/eliminar', [CentroController::class, 'eliminarZona'])->middleware('auth')->name('api.centros.zonas.eliminar');

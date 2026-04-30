@@ -782,10 +782,13 @@ class ProduccionController extends Controller
 
         $datos = DB::select("
             SELECT c.IdCentro, m.IdMaquina, m.Modelo AS modelo, c.NombreCentro AS centro, 
-                   co.Descripcion AS descripcionPais, m.version, m.lastReport,
-                   m.CodigoMaquina AS serie, m.EsVisible AS esVisible, m.relay AS Relay,
-                   c.tOn AS tON, c.tOff AS tOff, 
-                   cfg.isRMT AS isRMT
+                co.Descripcion AS descripcionPais, m.version, m.lastReport,
+                m.CodigoMaquina AS serie, m.EsVisible AS esVisible, m.relay AS Relay,
+                c.tOn AS tON, c.tOff AS tOff, cfg.isRMT AS isRMT,
+                m.mac,
+                m.jugBill1, m.jugBill2, m.jugBill5, m.jugBill10, m.jugBill20,
+                m.jugMon05, m.jugMon1, m.jugMon2, m.jugMon5, m.jugPOS,
+                m.pulsosPlay, m.valuePlay
             FROM maquinas m
             INNER JOIN centros c ON c.IdCentro = m.idCentro
             LEFT JOIN config cfg ON cfg.idMaquina = m.IdMaquina
@@ -816,10 +819,13 @@ class ProduccionController extends Controller
 
         $datos = DB::select("
             SELECT c.IdCentro, m.IdMaquina, m.Modelo AS modelo, c.NombreCentro AS centro, 
-                   co.Descripcion AS descripcionPais, m.version, m.lastReport,
-                   m.CodigoMaquina AS serie, m.EsVisible AS esVisible, m.relay AS Relay,
-                   c.tOn AS tON, c.tOff AS tOff, 
-                   cfg.isRMT AS isRMT
+                co.Descripcion AS descripcionPais, m.version, m.lastReport,
+                m.CodigoMaquina AS serie, m.EsVisible AS esVisible, m.relay AS Relay,
+                c.tOn AS tON, c.tOff AS tOff, cfg.isRMT AS isRMT,
+                m.mac,
+                m.jugBill1, m.jugBill2, m.jugBill5, m.jugBill10, m.jugBill20,
+                m.jugMon05, m.jugMon1, m.jugMon2, m.jugMon5, m.jugPOS,
+                m.pulsosPlay, m.valuePlay
             FROM maquinas m
             INNER JOIN centros c ON c.IdCentro = m.idCentro
             LEFT JOIN config cfg ON cfg.idMaquina = m.IdMaquina
@@ -850,10 +856,13 @@ class ProduccionController extends Controller
 
         $datos = DB::select("
             SELECT c.IdCentro, m.IdMaquina, m.Modelo AS modelo, c.NombreCentro AS centro, 
-                   co.Descripcion AS descripcionPais, m.version, m.lastReport,
-                   m.CodigoMaquina AS serie, m.EsVisible AS esVisible, m.relay AS Relay,
-                   c.tOn AS tON, c.tOff AS tOff, 
-                   cfg.isRMT AS isRMT
+                co.Descripcion AS descripcionPais, m.version, m.lastReport,
+                m.CodigoMaquina AS serie, m.EsVisible AS esVisible, m.relay AS Relay,
+                c.tOn AS tON, c.tOff AS tOff, cfg.isRMT AS isRMT,
+                m.mac,
+                m.jugBill1, m.jugBill2, m.jugBill5, m.jugBill10, m.jugBill20,
+                m.jugMon05, m.jugMon1, m.jugMon2, m.jugMon5, m.jugPOS,
+                m.pulsosPlay, m.valuePlay
             FROM maquinas m
             INNER JOIN centros c ON c.IdCentro = m.idCentro
             LEFT JOIN config cfg ON cfg.idMaquina = m.IdMaquina
@@ -930,10 +939,13 @@ class ProduccionController extends Controller
             if ($existeSerie) {
                 $datos = DB::select("
                     SELECT c.IdCentro, m.IdMaquina, m.Modelo AS modelo, c.NombreCentro AS centro, 
-                           co.Descripcion AS descripcionPais, m.version, m.lastReport,
-                           m.CodigoMaquina AS serie, m.EsVisible AS esVisible, m.relay AS Relay,
-                           c.tOn AS tON, c.tOff AS tOff, 
-                           cfg.isRMT AS isRMT
+                        co.Descripcion AS descripcionPais, m.version, m.lastReport,
+                        m.CodigoMaquina AS serie, m.EsVisible AS esVisible, m.relay AS Relay,
+                        c.tOn AS tON, c.tOff AS tOff, cfg.isRMT AS isRMT,
+                        m.mac,
+                        m.jugBill1, m.jugBill2, m.jugBill5, m.jugBill10, m.jugBill20,
+                        m.jugMon05, m.jugMon1, m.jugMon2, m.jugMon5, m.jugPOS,
+                        m.pulsosPlay, m.valuePlay
                     FROM maquinas m
                     INNER JOIN centros c ON c.IdCentro = m.idCentro
                     LEFT JOIN config cfg ON cfg.idMaquina = m.IdMaquina
@@ -1034,18 +1046,32 @@ class ProduccionController extends Controller
     public function actualizarMaquinaApi(Request $request)
     {
         $request->validate([
-            'idMaquina' => 'required|integer',
-            'modelo' => 'nullable|string',
-            'serie' => 'nullable|string',
-            'tON' => 'nullable|string',
-            'tOff' => 'nullable|string',
-            'esVisible' => 'nullable',
-            'isRMT' => 'nullable',
+            'idCentro' => 'nullable|integer',
+            'idMaquina'  => 'required|integer',
+            'modelo'     => 'nullable|string',
+            'serie'      => 'nullable|string',
+            'tON'        => 'nullable|string',
+            'tOff'       => 'nullable|string',
+            'esVisible'  => 'nullable',
+            'isRMT'      => 'nullable',
+            'mac'        => 'nullable|string|max:17',
+            'jugBill1'   => 'nullable|numeric|min:0',
+            'jugBill2'   => 'nullable|numeric|min:0',
+            'jugBill5'   => 'nullable|numeric|min:0',
+            'jugBill10'  => 'nullable|numeric|min:0',
+            'jugBill20'  => 'nullable|numeric|min:0',
+            'jugMon05'   => 'nullable|numeric|min:0',
+            'jugMon1'    => 'nullable|numeric|min:0',
+            'jugMon2'    => 'nullable|numeric|min:0',
+            'jugMon5'    => 'nullable|numeric|min:0',
+            'jugPOS'     => 'nullable|numeric|min:0',
+            'pulsosPlay' => 'nullable|numeric|min:0',
+            'valuePlay'  => 'nullable|numeric|min:0',
         ]);
 
-        $idMaquina = (int) $request->input('idMaquina');
-        $esVisible = (int) $request->input('esVisible', 1);
-        $isRMT = (int) $request->input('isRMT', 0);
+        $idMaquina  = (int) $request->input('idMaquina');
+        $esVisible  = (int) $request->input('esVisible', 1);
+        $isRMT      = (int) $request->input('isRMT', 0);
         $nuevaSerie = $request->input('serie');
 
         if ($nuevaSerie) {
@@ -1057,33 +1083,40 @@ class ProduccionController extends Controller
             if ($duplicado) {
                 return response()->json([
                     'success' => false,
-                    'error' => 'serie_duplicada',
+                    'error'   => 'serie_duplicada',
                     'message' => 'El número de serie ya está asignado a otra máquina',
                 ], 422);
             }
         }
 
-        $maquinaData = [
-            'EsVisible' => DB::raw($esVisible),
-        ];
-
-        if ($request->filled('modelo')) {
-            $maquinaData['Modelo'] = $request->input('modelo');
+        $maquinaData = ['EsVisible' => DB::raw($esVisible)];
+        if ($request->filled('idCentro')) {
+        $maquinaData['idCentro'] = (int) $request->input('idCentro');
         }
-        if ($request->filled('serie')) {
-            $maquinaData['CodigoMaquina'] = $request->input('serie');
+
+        if ($request->filled('modelo'))  $maquinaData['Modelo']       = $request->input('modelo');
+        if ($request->filled('serie'))   $maquinaData['CodigoMaquina'] = $request->input('serie');
+        if ($request->has('mac'))        $maquinaData['mac']           = $request->input('mac') ?: null;
+
+        $camposJug = ['jugBill1','jugBill2','jugBill5','jugBill10','jugBill20',
+                    'jugMon05','jugMon1','jugMon2','jugMon5','jugPOS',
+                    'pulsosPlay','valuePlay'];
+
+        foreach ($camposJug as $campo) {
+            if ($request->has($campo)) {
+                $maquinaData[$campo] = $request->input($campo) !== '' && $request->input($campo) !== null
+                    ? (float) $request->input($campo)
+                    : null;
+            }
         }
 
         DB::table('maquinas')->where('IdMaquina', $idMaquina)->update($maquinaData);
 
         if ($request->has('tON') || $request->has('tOff')) {
-            $centroId = DB::table('maquinas')
-                ->where('IdMaquina', $idMaquina)
-                ->value('idCentro');
-
+            $centroId = DB::table('maquinas')->where('IdMaquina', $idMaquina)->value('idCentro');
             if ($centroId) {
                 DB::table('centros')->where('IdCentro', $centroId)->update([
-                    'tOn' => $request->input('tON') ?: null,
+                    'tOn'  => $request->input('tON')  ?: null,
                     'tOff' => $request->input('tOff') ?: null,
                 ]);
             }
@@ -1091,19 +1124,14 @@ class ProduccionController extends Controller
 
         $existeConfig = DB::table('config')->where('idMaquina', $idMaquina)->exists();
         if ($existeConfig) {
-            DB::table('config')
-                ->where('idMaquina', $idMaquina)
-                ->update(['isRMT' => $isRMT]);
+            DB::table('config')->where('idMaquina', $idMaquina)->update(['isRMT' => $isRMT]);
         } else {
-            DB::table('config')->insert([
-                'idMaquina' => $idMaquina,
-                'isRMT' => $isRMT,
-            ]);
+            DB::table('config')->insert(['idMaquina' => $idMaquina, 'isRMT' => $isRMT]);
         }
 
         return response()->json([
-            'success' => true,
-            'message' => 'Cambios guardados correctamente',
+            'success'   => true,
+            'message'   => 'Cambios guardados correctamente',
             'esVisible' => $esVisible,
         ]);
     }

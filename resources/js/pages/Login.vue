@@ -45,7 +45,7 @@ const submit = () => form.post('/login');
                         </svg>
                     </div>
                     <div>
-                        <p class="text-white font-semibold text-sm leading-tight">Sistema de Tareo</p>
+                        <p class="text-white font-semibold text-sm leading-tight">Sistema de Consolidado</p>
                         <p class="text-slate-500 text-xs">Planet Sistcontrol Latam</p>
                     </div>
                 </div>
